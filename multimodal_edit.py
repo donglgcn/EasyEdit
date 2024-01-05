@@ -321,7 +321,7 @@ def edit_IKE_MiniGPT4_VQA():
     
     hparams = IKEMultimodalHyperParams.from_hparams('hparams/IKE/minigpt4.yaml')
     editor = MultimodalEditor.from_hparams(hparams)
-    train_ds = VQADataset('data/vqa_train.json', config=hparams)
+    train_ds = VQADataset('/localtmp/ktm8eh/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
     metrics, edited_model, _ = editor.edit(
         prompts=prompts,
         targets=targets,
@@ -369,7 +369,7 @@ def edit_IKE_MiniGPT4_Caption():
     
     hparams = IKEMultimodalHyperParams.from_hparams('hparams/IKE/minigpt4.yaml')
     editor = MultimodalEditor.from_hparams(hparams)
-    train_ds = VQADataset('data/vqa_train.json', config=hparams)
+    train_ds = VQADataset('/localtmp/ktm8eh/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
     metrics, edited_model, _ = editor.edit(
         prompts=prompts,
         targets=targets,
@@ -459,8 +459,8 @@ def test_IKE_Blip2OPT_VQA():
     
 def Generate_Embedding_for_IKE():
     
-    hparams = IKEMultimodalHyperParams.from_hparams('hparams/IKE/blip2.yaml')
-    train_ds = VQADataset('data/vqa_train.json', config=hparams)
+    hparams = IKEMultimodalHyperParams.from_hparams('hparams/IKE/minigpt4.yaml')
+    train_ds = VQADataset('/localtmp/ktm8eh/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
     ## Generate embedding files for IKE
     sentence_model = SentenceTransformer(hparams.sentence_model_name).to(f'cuda:{hparams.device}')
     encode_ike_facts_multimodal(sentence_model, train_ds, hparams)
@@ -469,8 +469,8 @@ def test_IKE_MiniGPT4_VQA():
     
     hparams = IKEMultimodalHyperParams.from_hparams('hparams/IKE/minigpt4.yaml')
     editor = MultimodalEditor.from_hparams(hparams)
-    train_ds = VQADataset('data/vqa_train.json', config=hparams)
-    eval_ds = VQADataset('data/vqa_eval.json', config=hparams)
+    train_ds = VQADataset('/localtmp/ktm8eh/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
+    eval_ds = VQADataset('/localtmp/ktm8eh/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_eval.json', config=hparams)
     metrics, edited_model, _ = editor.edit_dataset(
         ds=eval_ds,
         train_ds=train_ds,
@@ -653,7 +653,7 @@ if __name__ == "__main__":
     # train_MEND_MiniGPT4_VQA()
     # train_MEND_Blip2OPT_Caption()
     # train_MEND_Blip2OPT_VQA()
-    train_MEND_Blip2OPT_VQA_Vision()
+    # train_MEND_Blip2OPT_VQA_Vision()
     # train_MEND_Blip2OPT_VQA_debug()
     # train_MEND_Blip2OPT_VQA_Vision_debug()
     
@@ -670,6 +670,7 @@ if __name__ == "__main__":
     # Generate_Embedding_for_IKE()
     # test_IKE_MiniGPT4_VQA_debug()
     # test_IKE_Blip2OPT_VQA()
+    test_IKE_MiniGPT4_VQA()
     # test_IKE_Blip2OPT_VQA_debug()
     
 
