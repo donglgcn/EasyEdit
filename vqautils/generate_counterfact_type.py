@@ -5,12 +5,12 @@ from openai import OpenAI
 
 client = OpenAI(
     # This is the default and can be omitted
-    api_key="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",
+    api_key="",
 )
 """
 Given ('question': 'What popular company makes the computer in the forefront of the image?', 'image object': 'a dell computer', 'answer': 'dell', 'counterfact answer': 'apple'), which type is the conterfact changes, Text based or image-text based?
 [image-text based], because the changed fact is that the name of the image object. <image, is, dell> to <image, is , apple>
-Given ('question': 'What country serves this most?', 'image object': 'boeing plane', 'answer': 'United States', 'counterfact answer': 'China'), which type is the conterfact changes, Text based or image-text based?
+Given ('question': 'What country serves this msk-ost?', 'image object': 'boeing plane', 'answer': 'United States', 'counterfact answer': 'China'), which type is the conterfact changes, Text based or image-text based?
 [text base], because the changed fact is text common sense. <image, is, boeing>, <boeing, from, United States> to <image, is, boeing>, <boeing, from, China> and the name of the image object is not changed
 Given ('question': 'What day might I most commonly go to this building', 'image object': 'a church', 'answer': 'Sunday', 'counterfact answer': 'Saturday'), which type is the conterfact changes, Text based or image-text based?
 """

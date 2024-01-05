@@ -5,7 +5,7 @@ from openai import OpenAI
 
 client = OpenAI(
     # This is the default and can be omitted
-    api_key="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",
+    api_key="",
 )
 # response = client.chat.completions.create(
 #         messages=[
