@@ -1,0 +1,10 @@
+# CUDA_VISIBLE_DEVICES=0 nohup python generate_rephrased_images.py --partition 0 > ./rephrased_images_0.log 2>&1 &
+# CUDA_VISIBLE_DEVICES=1 nohup python generate_rephrased_images.py --partition 1 > ./rephrased_images_1.log 2>&1 &
+# CUDA_VISIBLE_DEVICES=2 nohup python generate_rephrased_images.py --partition 2 > ./rephrased_images_2.log 2>&1 &
+# CUDA_VISIBLE_DEVICES=3 nohup python generate_rephrased_images.py --partition 3 > ./rephrased_images_3.log 2>&1 &
+# CUDA_VISIBLE_DEVICES=4 nohup python generate_rephrased_images.py --partition 4 > ./rephrased_images_4.log 2>&1 &
+# CUDA_VISIBLE_DEVICES=5 nohup python generate_rephrased_images.py --partition 5 > ./rephrased_images_5.log 2>&1 &
+# CUDA_VISIBLE_DEVICES=6 nohup python generate_rephrased_images.py --partition 6 > ./rephrased_images_6.log 2>&1 &
+# CUDA_VISIBLE_DEVICES=7 nohup python generate_rephrased_images.py --partition 7 > ./rephrased_images_7.log 2>&1 &
+# CUDA_VISIBLE_DEVICES=8 nohup python generate_rephrased_images.py --partition 8 > ./rephrased_images_8.log 2>&1 &
+CUDA_VISIBLE_DEVICES=9 nohup python generate_rephrased_images.py --partition 9 > ./rephrased_images_9.log 2>&1 &
