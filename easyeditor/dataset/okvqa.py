@@ -16,8 +16,11 @@ import random
 import typing
 import torch
 import transformers
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))
+from vqautils.vqa import VQA
 
-class VQADataset(BaseDataset):
+class OKVQADataset(BaseDataset):
     def __init__(self, data_dir: str, size:  typing.Optional[int] = None, config=None, *args, **kwargs):
         """
         vis_root (string): Root directory of images (e.g. coco/images/)
@@ -39,7 +42,7 @@ class VQADataset(BaseDataset):
                 
         vis_root = config.coco_image
         rephrase_root = config.rephrase_image
-        super().__init__(vis_processor, vis_root, rephrase_root, [data_dir])
+        super().__init__(vis_processor, vis_root, rephrase_root, [])
 
         self.config = config
         self.tok = tokenizer
@@ -48,45 +51,57 @@ class VQADataset(BaseDataset):
         self.prompt = "Question: {} Short answer: "
 
         data = []
+        # load annotations like okvqa
+        # versionType ='v2_' # this should be '' when using VQA v2.0 dataset
+        taskType    = 'OpenEnded' # 'OpenEnded' only for v2.0. 'OpenEnded' or 'MultipleChoice' for v1.0
+        dataSubType = 'val2014'
+        annfile = os.path.join(data_dir, 'mscoco_val2014_annotations.json')
+        quesfile = os.path.join(data_dir, 'OpenEnded_mscoco_val2014_questions.json')
+        self.vis_root 		= os.path.join(self.vis_root, dataSubType)
+        # initialize VQA api for QA annotations
+        self.okvqa          = VQA(annotation_file=annfile, question_file=quesfile)
+        self.annIds         = self.okvqa.loadQA(self.okvqa.getQuesIds())
+        self.annotation     = self.okvqa.loadQA(self.annIds)
         if size is not None:
             self.annotation = self.annotation[:size]  
         for i, record in enumerate(self.annotation):
             
-            if record['alt'] == "":
+            if record['counterfact_answer'] == "":
                 continue
             
-            image_path = os.path.join(self.vis_root, record["image"])
-            rephrase_image_path = os.path.join(self.rephrase_root, record["image_rephrase"])
-            locality_image_path = os.path.join(self.vis_root, record['m_loc'])
+            imgFilename = 'COCO_' + dataSubType + '_'+ str(record['image_id']).zfill(12) + '.jpg'
+            image_path = os.path.join(self.vis_root, imgFilename)
+            
+            rephrase_image_folder = os.path.join(self.vis_root, str(record['question_id']))
+            rephrase_image_paths = [os.path.join(rephrase_image_folder, file) for file in os.listdir(rephrase_image_folder)]
+            # locality_image_path = os.path.join(self.vis_root, record['m_loc'])
             
             image = Image.open(image_path).convert("RGB")
-            rephrase_image = Image.open(rephrase_image_path).convert("RGB")
-            locality_image = Image.open(locality_image_path).convert("RGB")
+            rephrase_images = [Image.open(rephrase_image_path).convert("RGB") for rephrase_image_path in rephrase_image_paths]
+            # locality_image = Image.open(locality_image_path).convert("RGB")
 
             image = self.vis_processor(image)
-            rephrase_image = self.vis_processor(rephrase_image)  
-            locality_image = self.vis_processor(locality_image)  
-                      
+            rephrase_images = self.vis_processor(rephrase_images)  
+            # locality_image = self.vis_processor(locality_image)  
+
             item = {
-                'prompt': record['src'],
-                'pred': record['pred'],
-                'target': record['alt'],
-                'rephrase_prompt': record['rephrase'],
+                'prompt': self.vqa.qqa[record['question_id']]["question"],
+                'pred': record["answers"][0]["answer"],
+                'target': record['counterfact_answer'],
+                'rephrase_prompts': self.vqa.qqa[record['question_id']]["rephrased_questions"],
                 'image': image,
-                'image_rephrase': rephrase_image,
+                'image_rephrases': rephrase_images,
                 'cond': "{} >> {} || {}".format(
-                    record['pred'],
-                    record['alt'],
-                    record['src']
+                    record["answers"][0]["answer"],
+                    record['counterfact_answer'],
+                    self.vqa.qqa[record['question_id']]["question"]
                 )
             }
             
-            item['locality_prompt'] = record['loc']
-            item['locality_ground_truth'] = record['loc_ans']
-            
-            item['multimodal_locality_image'] = locality_image
-            item['multimodal_locality_prompt'] = record['m_loc_q']
-            item['multimodal_locality_ground_truth'] = record['m_loc_a']
+            item['question_type'] = record['question_type']
+            item['counterfact_type'] = record['counterfact_type']
+            item['counterfact_type_reason'] = record['counterfact_type_reason']
+            item['image_object'] = record['image_object']
             data.append(item)
             
         # if size is not None:
@@ -103,14 +118,14 @@ class VQADataset(BaseDataset):
         src = [b['prompt'] for b in batch]
         trg = [b['target'] for b in batch]
         cond = [b['cond'] for b in batch]
-        rephrase = [b['rephrase_prompt'] for b in batch]
+        rephrases = [b['rephrase_prompts'] for b in batch]
         image = [b['image'] for b in batch]
-        image_rephrase = [b['image_rephrase'] for b in batch]
-        loc_q = [b["locality_prompt"] for b in batch]
-        loc_a = [b["locality_ground_truth"] for b in batch]
-        m_loc_image = [b['multimodal_locality_image'] for b in batch]
-        m_loc_q = [b['multimodal_locality_prompt'] for b in batch]
-        m_loc_a = [b['multimodal_locality_ground_truth'] for b in batch]
+        image_rephrases = [b['image_rephrases'] for b in batch]
+        # loc_q = [b["locality_prompt"] for b in batch]
+        # loc_a = [b["locality_ground_truth"] for b in batch]
+        # m_loc_image = [b['multimodal_locality_image'] for b in batch]
+        # m_loc_q = [b['multimodal_locality_prompt'] for b in batch]
+        # m_loc_a = [b['multimodal_locality_ground_truth'] for b in batch]
         
         # edit_inner
         edit_inner = {}
@@ -127,18 +142,18 @@ class VQADataset(BaseDataset):
         # edit_outer
         edit_outer = {}
         edit_outer['image'] = torch.stack(image, dim=0)
-        edit_outer['text_input'] = [self.prompt.format(r) + f"{t}" for r, t in zip(rephrase, trg)]
+        edit_outer['text_input'] = [[self.prompt.format(r) + f"{t}" for r in rephrase] for rephrase, t in zip(rephrases, trg)]
         edit_outer['labels'] = trg
         if self.config.model_name == "minigpt4" or self.config.model_name == "blip2":
-            edit_outer['prompts_len'] = [len(self.tok.encode(self.prompt.format(r), add_special_tokens=False)) for r in rephrase]
+            edit_outer['prompts_len'] = [[len(self.tok.encode(self.prompt.format(r), add_special_tokens=False)) for r in rephrase] for rephrase in rephrases]
             edit_outer['labels'] = self.tok.encode(trg, add_special_tokens=False, return_tensors="pt",)
         else:
-            edit_outer['prompts_len'] = [len(self.tok.encode(self.prompt.format(r))) for r in rephrase]
+            edit_outer['prompts_len'] = [[len(self.tok.encode(self.prompt.format(r))) for r in rephrase] for rephrase in rephrases]
             edit_outer['labels'] = self.tok.encode(trg, return_tensors="pt",)
             
         # edit_outer_image
         edit_outer_image = {}
-        edit_outer_image['image'] = torch.stack(image_rephrase, dim=0)
+        edit_outer_image['image'] = torch.stack(image_rephrases, dim=0)
         edit_outer_image['text_input'] = [self.prompt.format(s) + f"{t}" for s, t in zip(src, trg)]
         edit_outer_image['labels'] = trg
         if self.config.model_name == "minigpt4" or self.config.model_name == "blip2":
@@ -148,30 +163,6 @@ class VQADataset(BaseDataset):
             edit_outer_image['prompts_len'] = [len(self.tok.encode(self.prompt.format(s))) for s in src]
             edit_outer_image['labels'] = self.tok.encode(trg, return_tensors="pt",)
         
-        # loc
-        loc = {}
-        loc['image'] = None
-        loc['text_input'] = [" ".join([q, a]) for q, a in zip(loc_q, loc_a)]
-        loc['labels'] = loc_a
-        if self.config.model_name == "minigpt4" or self.config.model_name == "blip2":
-            loc['prompts_len'] = [len(self.tok.encode(q, add_special_tokens=False)) for q in loc_q]
-            loc['labels'] = self.tok.encode(loc_a, add_special_tokens=False, return_tensors="pt",)
-        else:
-            loc['prompts_len'] = [len(self.tok.encode(q)) for q in loc_q]
-            loc['labels'] = self.tok.encode(loc_a, return_tensors="pt",)
-        
-        # m_loc
-        loc_image = {}
-        loc_image['image'] = torch.stack(m_loc_image, dim=0)
-        loc_image['text_input'] = [self.prompt.format(q) + a for q, a in zip(m_loc_q, m_loc_a)]
-        loc_image['labels'] = m_loc_a
-        if self.config.model_name == "minigpt4" or self.config.model_name == "blip2":
-            loc_image['prompts_len'] = [len(self.tok.encode(self.prompt.format(q), add_special_tokens=False)) for q in m_loc_q]
-            loc_image['labels'] = self.tok.encode(m_loc_a, add_special_tokens=False, return_tensors="pt",)
-        else:
-            loc_image['prompts_len'] = [len(self.tok.encode(self.prompt.format(q))) for q in m_loc_q]
-            loc_image['labels'] = self.tok.encode(m_loc_a, return_tensors="pt",)
-
         # cond
         cond = self.tok(
             cond,
@@ -185,8 +176,6 @@ class VQADataset(BaseDataset):
             "edit_inner": edit_inner,
             "edit_outer": edit_outer,
             "edit_outer_image": edit_outer_image,
-            "loc": loc,
-            "loc_image": loc_image,
             "cond": cond
         }
         return dict_to(batch, self.config.device)
