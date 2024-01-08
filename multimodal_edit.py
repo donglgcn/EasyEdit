@@ -37,8 +37,8 @@ def train_MEND_MiniGPT4_Caption():
 
 def train_MEND_MiniGPT4_VQA():
     hparams = MENDMultimodalTrainingHparams.from_hparams('hparams/TRAINING/MEND/minigpt4.yaml')
-    train_ds = VQADataset('data/vqa_train.json', config=hparams)
-    eval_ds = VQADataset('data/vqa_eval.json', config=hparams)
+    train_ds = VQADataset('/localtmp/ktm8eh/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
+    eval_ds = VQADataset('/localtmp/ktm8eh/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_eval.json', config=hparams)
     trainer = MultimodalTrainer(
         config=hparams,
         train_set=train_ds,
@@ -659,12 +659,16 @@ def test_IKE_MiniGPT4_OKVQA():
         train_ds=train_ds,
         keep_original_weight=True        
     )
+    #dump metrics
+    import pickle
+    with open('okvqa_metrics.pkl', 'wb') as f:
+        pickle.dump(metrics, f)
 
     
 if __name__ == "__main__":
     
     # train_MEND_MiniGPT4_Caption()
-    # train_MEND_MiniGPT4_VQA()
+    train_MEND_MiniGPT4_VQA()
     # train_MEND_Blip2OPT_Caption()
     # train_MEND_Blip2OPT_VQA()
     # train_MEND_Blip2OPT_VQA_Vision()
@@ -686,7 +690,7 @@ if __name__ == "__main__":
     # test_IKE_Blip2OPT_VQA()
     # test_IKE_MiniGPT4_VQA()
     # test_IKE_Blip2OPT_VQA_debug()
-    test_IKE_MiniGPT4_OKVQA()
+    # test_IKE_MiniGPT4_OKVQA()
     
 
     # edit_MEND_MiniGPT4_Caption()

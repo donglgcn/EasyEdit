@@ -457,8 +457,8 @@ class MultimodalEditor:
                     "pre": compute_icl_multimodal_edit_quality(self.model, self.model_name, self.hparams, self.tok, [''],
                                                      request, self.hparams.device, pre_edit=True)
                 }
-                metrics['pre'].pop('locality_acc')
-                metrics['pre'].pop('locality_image_acc')
+                if 'locality_acc' in metrics['pre'].keys(): metrics['pre'].pop('locality_acc')
+                if 'locality_image_acc' in metrics['pre'].keys(): metrics['pre'].pop('locality_image_acc')
 
                 LOG.info(f"Evaluation took {time() - start}")
 

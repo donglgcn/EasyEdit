@@ -4,7 +4,7 @@ from ..models.kn import KNHyperParams, apply_kn_to_model
 from ..models.mend import MENDHyperParams, MendRewriteExecutor, MendMultimodalRewriteExecutor
 from ..models.ft import FTHyperParams, apply_ft_to_model
 from ..models.serac import SERACHparams, SeracRewriteExecutor, SeracMultimodalRewriteExecutor
-from ..dataset import ZsreDataset, CounterFactDataset, CaptionDataset, VQADataset
+from ..dataset import ZsreDataset, CounterFactDataset, CaptionDataset, VQADataset, OKVQADataset
 from ..models.ike import IKEHyperParams, apply_ike_to_model, apply_ike_to_multimodal_model
 from ..models.ft_api import FTApiHyperParams, apply_ft_api_to_model
 from ..models.lora import LoRAHyperParams, apply_lora_to_model
@@ -38,4 +38,5 @@ DS_DICT = {
 MULTIMODAL_DS_DICT = {
     "caption": CaptionDataset,
     "vqa": VQADataset,
+    "okvqa": OKVQADataset,
 }

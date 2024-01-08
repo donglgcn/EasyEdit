@@ -286,11 +286,16 @@ def compute_icl_multimodal_edit_quality(
     target = record["target"]
     prompt = record["prompt"]
     image = record["image"] if record["image"].is_cuda else record["image"].to(hparams.device)
+    # add repharses and image rephrases for okvqa datasets
+    rephrases = record["rephrase_prompts"] if 'rephrase_prompts' in record.keys() else None
+    rephrase_images = record["image_rephrases"] if 'image_rephrases' in record.keys() else None
     rephrase = record["rephrase_prompt"] if 'rephrase_prompt' in record.keys() else None
     rephrase_image = record["image_rephrase"] if 'image_rephrase' in record.keys() else None
     if rephrase_image is not None:
         rephrase_image = rephrase_image if rephrase_image.is_cuda else rephrase_image.to(hparams.device)
-    
+    if rephrase_images is not None:
+        rephrase_images = rephrase_images if rephrase_images.is_cuda else rephrase_images.to(hparams.device)
+        
     if "locality_prompt" in record.keys():
         loc_q = record["locality_prompt"]
         loc_a = record["locality_ground_truth"]
@@ -314,11 +319,27 @@ def compute_icl_multimodal_edit_quality(
         rephrase_acc, _ = icl_multimodal_lm_eval(model, model_name, hparams, tok, icl_examples,
                                target, f'New Fact: {prompt} {target}\nPrompt: {rephrase}', image)
         ret['rephrase_acc'] = rephrase_acc
-        
+    
+    if rephrases is not None:
+        T_Generaltiy_Acc = []
+        for rephrased_text in rephrases:
+            rephrase_acc, _ = icl_multimodal_lm_eval(model, model_name, hparams, tok, icl_examples,
+                                target, f'New Fact: {prompt} {target}\nPrompt: {rephrased_text}', image)
+            T_Generaltiy_Acc.append(rephrase_acc)
+        ret['rephrase_acc'] = sum(T_Generaltiy_Acc) / len(T_Generaltiy_Acc)
+
     if "image_rephrase" in record.keys():
         rephrase_image_acc, _ = icl_multimodal_lm_eval(model, model_name, hparams, tok, icl_examples,
                                target, new_fact, rephrase_image)
         ret['rephrase_image_acc'] = rephrase_image_acc
+    
+    if "image_rephrases" in record.keys():
+        I_Generaltiy_Acc = []
+        for rephrased_image in rephrase_images:
+            rephrase_image_acc, _ = icl_multimodal_lm_eval(model, model_name, hparams, tok, icl_examples,
+                                target, new_fact, rephrased_image)
+            I_Generaltiy_Acc.append(rephrase_image_acc)
+        ret['rephrase_image_acc'] = sum(I_Generaltiy_Acc) / len(I_Generaltiy_Acc)
     
     if "locality_prompt" in record.keys():
         locality_acc, _ = icl_multimodal_lm_eval(model, model_name, hparams, tok, icl_examples,
@@ -399,7 +420,7 @@ def compute_multimodal_edit_quality(model, batch):
     num_non_padding = mask.sum().float().item()
     acc = correct.sum() / num_non_padding
     
-    return acc, pred_ids.numpy()
+    return acc.item(), pred_ids.numpy()
   
 def compute_multimodal_edit_quality_demo(model, batch):
     
@@ -480,7 +501,7 @@ def compute_multimodal_edit_results(
     # Form a list of lists of prefixes to test.
 
     return ret
-  
+
 def compute_multimodal_edit_results_demo(
     model,
     model_name,

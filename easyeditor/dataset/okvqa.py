@@ -60,7 +60,7 @@ class OKVQADataset(BaseDataset):
         self.vis_root 		= os.path.join(self.vis_root, dataSubType)
         # initialize VQA api for QA annotations
         self.okvqa          = VQA(annotation_file=annfile, question_file=quesfile)
-        self.annIds         = self.okvqa.loadQA(self.okvqa.getQuesIds())
+        self.annIds         = self.okvqa.getQuesIds()
         self.annotation     = self.okvqa.loadQA(self.annIds)
         if size is not None:
             self.annotation = self.annotation[:size]  
@@ -72,8 +72,8 @@ class OKVQADataset(BaseDataset):
             imgFilename = 'COCO_' + dataSubType + '_'+ str(record['image_id']).zfill(12) + '.jpg'
             image_path = os.path.join(self.vis_root, imgFilename)
             
-            rephrase_image_folder = os.path.join(self.vis_root, str(record['question_id']))
-            rephrase_image_paths = [os.path.join(rephrase_image_folder, file) for file in os.listdir(rephrase_image_folder)]
+            rephrase_image_folder = os.path.join(self.rephrase_root, str(record['question_id']))
+            rephrase_image_paths = sorted([os.path.join(rephrase_image_folder, file) for file in os.listdir(rephrase_image_folder)])
             # locality_image_path = os.path.join(self.vis_root, record['m_loc'])
             
             image = Image.open(image_path).convert("RGB")
@@ -81,20 +81,34 @@ class OKVQADataset(BaseDataset):
             # locality_image = Image.open(locality_image_path).convert("RGB")
 
             image = self.vis_processor(image)
-            rephrase_images = self.vis_processor(rephrase_images)  
+            
+            processed_images = []
+
+            # Loop through each image in the batch
+            for img in rephrase_images:
+                # Process each image individually using self.vis_processor
+                processed_img = self.vis_processor(img)
+                
+                # Append the processed image to the list
+                processed_images.append(processed_img)
+
+            # Convert the list of processed images to a PyTorch tensor
+            rephrase_images = torch.stack(processed_images, dim=0)
+
+            # rephrase_images = self.vis_processor(rephrase_images)  
             # locality_image = self.vis_processor(locality_image)  
 
             item = {
-                'prompt': self.vqa.qqa[record['question_id']]["question"],
+                'prompt': self.okvqa.qqa[record['question_id']]["question"],
                 'pred': record["answers"][0]["answer"],
                 'target': record['counterfact_answer'],
-                'rephrase_prompts': self.vqa.qqa[record['question_id']]["rephrased_questions"],
+                'rephrase_prompts': self.okvqa.qqa[record['question_id']]["rephrased_questions"],
                 'image': image,
                 'image_rephrases': rephrase_images,
                 'cond': "{} >> {} || {}".format(
                     record["answers"][0]["answer"],
                     record['counterfact_answer'],
-                    self.vqa.qqa[record['question_id']]["question"]
+                    self.okvqa.qqa[record['question_id']]["question"]
                 )
             }
             
