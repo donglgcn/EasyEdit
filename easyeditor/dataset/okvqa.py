@@ -177,6 +177,42 @@ class OKVQADataset(BaseDataset):
             edit_outer_image['prompts_len'] = [len(self.tok.encode(self.prompt.format(s))) for s in src]
             edit_outer_image['labels'] = self.tok.encode(trg, return_tensors="pt",)
         
+        # loc
+        # "loc": "nq question: what purpose did seasonal monsoon winds have on trade", 
+        # "loc_ans": "enabled European empire expansion into the Americas and trade routes to become established across the Atlantic and Pacific oceans", 
+        # "m_loc": "val2014/COCO_val2014_000000297147.jpg", 
+        # "m_loc_q": "What sport can you use this for?",
+        # "m_loc_a": "riding"
+        loc_q = ["nq question: what purpose did seasonal monsoon winds have on trade" for b in batch]
+        loc_a = ["enabled European empire expansion into the Americas and trade routes to become established across the Atlantic and Pacific oceans" for b in batch]
+        m_loc_image = Image.open(os.path.join(self.vis_root,"val2014/COCO_val2014_000000297147.jpg")).convert("RGB")
+        m_loc_image = self.vis_processor(m_loc_image)
+        m_loc_image = [m_loc_image for b in batch]
+        m_loc_q = ["What sport can you use this for?" for b in batch]
+        m_loc_a = ["riding" for b in batch]
+        loc = {}
+        loc['image'] = None
+        loc['text_input'] = [" ".join([q, a]) for q, a in zip(loc_q, loc_a)]
+        loc['labels'] = loc_a
+        if self.config.model_name == "minigpt4" or self.config.model_name == "blip2":
+            loc['prompts_len'] = [len(self.tok.encode(q, add_special_tokens=False)) for q in loc_q]
+            loc['labels'] = self.tok.encode(loc_a, add_special_tokens=False, return_tensors="pt",)
+        else:
+            loc['prompts_len'] = [len(self.tok.encode(q)) for q in loc_q]
+            loc['labels'] = self.tok.encode(loc_a, return_tensors="pt",)
+        
+        # m_loc
+        loc_image = {}
+        loc_image['image'] = torch.stack(m_loc_image, dim=0)
+        loc_image['text_input'] = [self.prompt.format(q) + a for q, a in zip(m_loc_q, m_loc_a)]
+        loc_image['labels'] = m_loc_a
+        if self.config.model_name == "minigpt4" or self.config.model_name == "blip2":
+            loc_image['prompts_len'] = [len(self.tok.encode(self.prompt.format(q), add_special_tokens=False)) for q in m_loc_q]
+            loc_image['labels'] = self.tok.encode(m_loc_a, add_special_tokens=False, return_tensors="pt",)
+        else:
+            loc_image['prompts_len'] = [len(self.tok.encode(self.prompt.format(q))) for q in m_loc_q]
+            loc_image['labels'] = self.tok.encode(m_loc_a, return_tensors="pt",)
+        
         # cond
         cond = self.tok(
             cond,
@@ -190,6 +226,8 @@ class OKVQADataset(BaseDataset):
             "edit_inner": edit_inner,
             "edit_outer": edit_outer,
             "edit_outer_image": edit_outer_image,
+            "loc": loc,
+            "loc_image": loc_image,
             "cond": cond
         }
         return dict_to(batch, self.config.device)

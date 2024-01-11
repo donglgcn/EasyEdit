@@ -1,11 +1,11 @@
 # Model
 device: 0
 alg_name: "MEND"
-name: hugging_cache/Vicuna
+name: hugging_cache/vicuna-7b
 model_name: minigpt4
 model_class: Blip2OPT
 tokenizer_class: LlamaTokenizer
-tokenizer_name: hugging_cache/Vicuna
+tokenizer_name: hugging_cache/vicuna-7b
 inner_params:
 - llama_model.model.layers.29.mlp.down_proj.weight
 - llama_model.model.layers.29.mlp.up_proj.weight
@@ -40,7 +40,7 @@ act: relu
 rank: 1920
 mlp_class: IDMLP
 shared: True
-archive: results/models/MEND/minigpt4-vqa
+archive: results/models/MEND/minigpt4
 
 # Train
 batch_size: 1
@@ -76,5 +76,5 @@ state_dict_file: hugging_cache/eva_vit_g.pth
 pretrained_ckpt: hugging_cache/pretrained_minigpt4_7b.pth
 
 # image
-coco_image: ../
-rephrase_image: ../
+coco_image: /localtmp/ktm8eh/datasets/EasyEdit/
+rephrase_image: /localtmp/ktm8eh/datasets/EasyEdit/

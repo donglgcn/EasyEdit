@@ -64,16 +64,52 @@ class MultimodalTrainer(BaseTrainer):
 
         with torch.set_grad_enabled(training):
             # Editing loss
-            post_edit_outputs = edited_model(batch["edit_outer"])
-            post_batch_labels = batch["edit_outer"]["labels"]
+            if isinstance(b['text_input'][0], list):
+                # convert 10 text_input to 10 batches of text_input with original batch size
+                post_edit_outputs = []
+                post_batch_labels = []
+                new_batch_edit_outer = []
+                b = batch["edit_outer"]
+                for i in range(len(b["text_input"])):
+                    new_b = copy.deepcopy(b)
+                    new_b["text_input"] = [t[i] for t in b["text_input"]]
+                    new_b['prompts_len'] = [p[i] for p in b["prompts_len"]]
+                    new_batch_edit_outer.append(new_b)
+                for i, b in enumerate(new_batch_edit_outer):
+                    post_edit_output = edited_model(b)
+                    post_batch_label = batch["edit_outer"]["labels"]
+                    post_edit_outputs.append(post_edit_output)
+                    post_batch_labels.append(post_batch_label)
+                post_edit_outputs = torch.stack(post_edit_outputs, dim=0)
+                post_batch_labels = torch.stack(post_batch_labels, dim=0)
+            else:
+                post_edit_outputs = edited_model(batch["edit_outer"])
+                post_batch_labels = batch["edit_outer"]["labels"]
             if not isinstance(post_edit_outputs, torch.Tensor):
                 post_edit_logits = post_edit_outputs.logits
             else:
                 post_edit_logits = post_edit_outputs
 
             # rephrase image
-            post_image_edit_outputs = edited_model(batch["edit_outer_image"])
-            post_image_batch_labels = batch["edit_outer_image"]["labels"]
+            if batch["edit_outer_image"]['image'].dim() == 5:
+                post_image_edit_outputs = []
+                post_image_batch_labels = []
+                new_batch_edit_outer_image = []
+                b = batch["edit_outer_image"]
+                for i in range(len(b["text_input"])):
+                    new_b = copy.deepcopy(b)
+                    new_b["image"] = b['image'][:, i, :, :, :]
+                    new_batch_edit_outer_image.append(new_b)
+                for i, b in enumerate(new_batch_edit_outer_image):
+                    post_image_edit_output = edited_model(b)
+                    post_image_batch_label = batch["edit_outer_image"]["labels"]
+                    post_image_edit_outputs.append(post_image_edit_output)
+                    post_image_batch_labels.append(post_image_batch_label)
+                post_image_edit_outputs = torch.stack(post_image_edit_outputs, dim=0)
+                post_image_batch_labels = torch.stack(post_image_batch_labels, dim=0)
+            else:
+                post_image_edit_outputs = edited_model(batch["edit_outer_image"])
+                post_image_batch_labels = batch["edit_outer_image"]["labels"]
             if not isinstance(post_image_edit_outputs, torch.Tensor):
                 post_image_edit_logits = post_image_edit_outputs.logits
             else:

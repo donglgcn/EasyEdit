@@ -111,7 +111,7 @@ def train_MEND_Blip2OPT_VQA_Vision():
 def test_MEND_MiniGPT4_VQA():
     hparams = MENDMultimodalHparams.from_hparams('hparams/MEND/minigpt4.yaml')
     # train_ds = VQADataset('data/vqa_train.json', config=hparams)
-    eval_ds = VQADataset('data/vqa_eval_test.json', config=hparams)
+    eval_ds = VQADataset('/localtmp/ktm8eh/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_eval.json', config=hparams)
     trainer = MultimodalTrainer(
         config=hparams,
         train_set=eval_ds,
@@ -119,6 +119,20 @@ def test_MEND_MiniGPT4_VQA():
     )
     
     trainer.run()    
+
+
+def test_MEND_MiniGPT4_OKVQA():
+    hparams = MENDMultimodalHparams.from_hparams('hparams/MEND/minigpt4.yaml')
+    # train_ds = VQADataset('data/vqa_train.json', config=hparams)
+    hparams.rephrase_image = '/localtmp/ktm8eh/datasets/VQA/rephrased_images/'
+    eval_ds = OKVQADataset('vqautils', config=hparams)    
+    trainer = MultimodalTrainer(
+        config=hparams,
+        train_set=eval_ds,
+        val_set=eval_ds
+    )
+    
+    trainer.run()
 
 
 def train_SERAC_MiniGPT4_Caption():
@@ -551,6 +565,7 @@ def edit_MEND_MiniGPT4_VQA():
         locality_inputs=locality_inputs,
         keep_original_weight=True        
     )
+    print(metrics)
     
     
 def edit_SERAC_MiniGPT4_VQA():
@@ -668,7 +683,7 @@ def test_IKE_MiniGPT4_OKVQA():
 if __name__ == "__main__":
     
     # train_MEND_MiniGPT4_Caption()
-    train_MEND_MiniGPT4_VQA()
+    # train_MEND_MiniGPT4_VQA()
     # train_MEND_Blip2OPT_Caption()
     # train_MEND_Blip2OPT_VQA()
     # train_MEND_Blip2OPT_VQA_Vision()
@@ -685,6 +700,7 @@ if __name__ == "__main__":
     
     # test_SERAC_MiniGPT4_Caption()
     # test_MEND_MiniGPT4_VQA()
+    # test_MEND_MiniGPT4_OKVQA()
     # Generate_Embedding_for_IKE()
     # test_IKE_MiniGPT4_VQA_debug()
     # test_IKE_Blip2OPT_VQA()
@@ -694,7 +710,7 @@ if __name__ == "__main__":
     
 
     # edit_MEND_MiniGPT4_Caption()
-    # edit_MEND_MiniGPT4_VQA()
+    edit_MEND_MiniGPT4_VQA()
     # edit_SERAC_MiniGPT4_Caption()
     # edit_SERAC_Blip2OPT_Caption()
     # edit_IKE_MiniGPT4_Caption()
