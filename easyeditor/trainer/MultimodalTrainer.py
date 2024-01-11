@@ -64,9 +64,10 @@ class MultimodalTrainer(BaseTrainer):
 
         with torch.set_grad_enabled(training):
             # Editing loss
-            if isinstance(b['text_input'][0], list):
+            # print(batch["edit_outer"])
+            if isinstance(batch["edit_outer"]['text_input'][0], list):
                 # convert 10 text_input to 10 batches of text_input with original batch size
-                post_edit_outputs = []
+                post_edit_logits = []
                 post_batch_labels = []
                 new_batch_edit_outer = []
                 b = batch["edit_outer"]
@@ -78,21 +79,31 @@ class MultimodalTrainer(BaseTrainer):
                 for i, b in enumerate(new_batch_edit_outer):
                     post_edit_output = edited_model(b)
                     post_batch_label = batch["edit_outer"]["labels"]
-                    post_edit_outputs.append(post_edit_output)
+                    print("post_batch_label: ", post_batch_label)
+                    if not isinstance(post_edit_output, torch.Tensor):
+                        post_edit_logit = post_edit_output.logits
+                    else:
+                        post_edit_logit = post_edit_output
+                    post_edit_logits.append(post_edit_logit)
                     post_batch_labels.append(post_batch_label)
-                post_edit_outputs = torch.stack(post_edit_outputs, dim=0)
-                post_batch_labels = torch.stack(post_batch_labels, dim=0)
+                    # print("post_edit_logit: ", post_edit_logit.shape)
+                    # print("post_batch_label: ", post_batch_label.shape)
+                post_edit_logits = torch.cat(post_edit_logits, dim=0)
+                # print("post_edit_logits: ", post_edit_logits.shape)
+                post_batch_labels = torch.cat(post_batch_labels, dim=0)
+                # print("post_batch_labels: ", post_batch_labels.shape)
             else:
                 post_edit_outputs = edited_model(batch["edit_outer"])
                 post_batch_labels = batch["edit_outer"]["labels"]
-            if not isinstance(post_edit_outputs, torch.Tensor):
-                post_edit_logits = post_edit_outputs.logits
-            else:
-                post_edit_logits = post_edit_outputs
+                if not isinstance(post_edit_outputs, torch.Tensor):
+                    post_edit_logits = post_edit_outputs.logits
+                else:
+                    post_edit_logits = post_edit_outputs
+            
 
             # rephrase image
             if batch["edit_outer_image"]['image'].dim() == 5:
-                post_image_edit_outputs = []
+                post_image_edit_logits = []
                 post_image_batch_labels = []
                 new_batch_edit_outer_image = []
                 b = batch["edit_outer_image"]
@@ -103,17 +114,21 @@ class MultimodalTrainer(BaseTrainer):
                 for i, b in enumerate(new_batch_edit_outer_image):
                     post_image_edit_output = edited_model(b)
                     post_image_batch_label = batch["edit_outer_image"]["labels"]
-                    post_image_edit_outputs.append(post_image_edit_output)
+                    if not isinstance(post_image_edit_output, torch.Tensor):
+                        post_image_edit_logit = post_image_edit_output.logits
+                    else:
+                        post_image_edit_logit = post_image_edit_output
+                    post_image_edit_logits.append(post_image_edit_logit)
                     post_image_batch_labels.append(post_image_batch_label)
-                post_image_edit_outputs = torch.stack(post_image_edit_outputs, dim=0)
-                post_image_batch_labels = torch.stack(post_image_batch_labels, dim=0)
+                post_image_edit_logits = torch.cat(post_image_edit_logits, dim=0)
+                post_image_batch_labels = torch.cat(post_image_batch_labels, dim=0)
             else:
                 post_image_edit_outputs = edited_model(batch["edit_outer_image"])
                 post_image_batch_labels = batch["edit_outer_image"]["labels"]
-            if not isinstance(post_image_edit_outputs, torch.Tensor):
-                post_image_edit_logits = post_image_edit_outputs.logits
-            else:
-                post_image_edit_logits = post_image_edit_outputs
+                if not isinstance(post_image_edit_outputs, torch.Tensor):
+                    post_image_edit_logits = post_image_edit_outputs.logits
+                else:
+                    post_image_edit_logits = post_image_edit_outputs
                 
             inner_edit_outputs = edited_model(batch["edit_inner"])
             inner_batch_labels = batch["edit_inner"]["labels"]

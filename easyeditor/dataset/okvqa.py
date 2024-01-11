@@ -158,9 +158,11 @@ class OKVQADataset(BaseDataset):
         edit_outer['image'] = torch.stack(image, dim=0)
         edit_outer['text_input'] = [[self.prompt.format(r) + f"{t}" for r in rephrase] for rephrase, t in zip(rephrases, trg)]
         edit_outer['labels'] = trg
+        print("edit_outer['labels']", edit_outer['labels'])
         if self.config.model_name == "minigpt4" or self.config.model_name == "blip2":
             edit_outer['prompts_len'] = [[len(self.tok.encode(self.prompt.format(r), add_special_tokens=False)) for r in rephrase] for rephrase in rephrases]
             edit_outer['labels'] = self.tok.encode(trg, add_special_tokens=False, return_tensors="pt",)
+            print("edit_outer['labels'] tok", edit_outer['labels'])
         else:
             edit_outer['prompts_len'] = [[len(self.tok.encode(self.prompt.format(r))) for r in rephrase] for rephrase in rephrases]
             edit_outer['labels'] = self.tok.encode(trg, return_tensors="pt",)
@@ -185,7 +187,7 @@ class OKVQADataset(BaseDataset):
         # "m_loc_a": "riding"
         loc_q = ["nq question: what purpose did seasonal monsoon winds have on trade" for b in batch]
         loc_a = ["enabled European empire expansion into the Americas and trade routes to become established across the Atlantic and Pacific oceans" for b in batch]
-        m_loc_image = Image.open(os.path.join(self.vis_root,"val2014/COCO_val2014_000000297147.jpg")).convert("RGB")
+        m_loc_image = Image.open(os.path.join(self.vis_root,"COCO_val2014_000000297147.jpg")).convert("RGB")
         m_loc_image = self.vis_processor(m_loc_image)
         m_loc_image = [m_loc_image for b in batch]
         m_loc_q = ["What sport can you use this for?" for b in batch]

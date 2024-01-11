@@ -124,7 +124,7 @@ def test_MEND_MiniGPT4_VQA():
 def test_MEND_MiniGPT4_OKVQA():
     hparams = MENDMultimodalHparams.from_hparams('hparams/MEND/minigpt4.yaml')
     # train_ds = VQADataset('data/vqa_train.json', config=hparams)
-    hparams.rephrase_image = '/localtmp/ktm8eh/datasets/VQA/rephrased_images/'
+    hparams.rephrase_image = '/project/SDS/research/sds-rise/dongliang/datasets/VQA/rephrased_images/'
     eval_ds = OKVQADataset('vqautils', config=hparams)    
     trainer = MultimodalTrainer(
         config=hparams,
@@ -700,7 +700,7 @@ if __name__ == "__main__":
     
     # test_SERAC_MiniGPT4_Caption()
     # test_MEND_MiniGPT4_VQA()
-    # test_MEND_MiniGPT4_OKVQA()
+    test_MEND_MiniGPT4_OKVQA()
     # Generate_Embedding_for_IKE()
     # test_IKE_MiniGPT4_VQA_debug()
     # test_IKE_Blip2OPT_VQA()
@@ -710,7 +710,7 @@ if __name__ == "__main__":
     
 
     # edit_MEND_MiniGPT4_Caption()
-    edit_MEND_MiniGPT4_VQA()
+    # edit_MEND_MiniGPT4_VQA()
     # edit_SERAC_MiniGPT4_Caption()
     # edit_SERAC_Blip2OPT_Caption()
     # edit_IKE_MiniGPT4_Caption()
