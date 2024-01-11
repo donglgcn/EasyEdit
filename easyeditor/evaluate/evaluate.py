@@ -421,7 +421,7 @@ def compute_multimodal_edit_quality(model, batch):
     acc = correct.sum() / num_non_padding
     
     return acc.item(), pred_ids.numpy()
-  
+
 def compute_multimodal_edit_quality_demo(model, batch):
     
     with torch.no_grad():
