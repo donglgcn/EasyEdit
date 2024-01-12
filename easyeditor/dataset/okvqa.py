@@ -148,10 +148,10 @@ class OKVQADataset(BaseDataset):
         edit_inner['labels'] = trg
         if self.config.model_name == "minigpt4" or self.config.model_name == "blip2":
             edit_inner['prompts_len'] = [len(self.tok.encode(self.prompt.format(s), add_special_tokens=False)) for s in src]
-            edit_inner['labels'] = torch.stack([self.tok.encode(target, add_special_tokens=False, return_tensors="pt",) for target in trg], dim=0)
+            edit_inner['labels'] = torch.cat([self.tok.encode(target, add_special_tokens=False, return_tensors="pt",) for target in trg], dim=0)
         else:
             edit_inner['prompts_len'] = [len(self.tok.encode(self.prompt.format(s))) for s in src]
-            edit_inner['labels'] = torch.stack([self.tok.encode(target, return_tensors="pt",) for target in trg], dim=0)
+            edit_inner['labels'] = torch.cat([self.tok.encode(target, return_tensors="pt",) for target in trg], dim=0)
         
         # edit_outer
         edit_outer = {}
@@ -161,11 +161,11 @@ class OKVQADataset(BaseDataset):
         print("edit_outer['labels']", edit_outer['labels'])
         if self.config.model_name == "minigpt4" or self.config.model_name == "blip2":
             edit_outer['prompts_len'] = [[len(self.tok.encode(self.prompt.format(r), add_special_tokens=False)) for r in rephrase] for rephrase in rephrases]
-            edit_outer['labels'] = torch.stack([self.tok.encode(target, add_special_tokens=False, return_tensors="pt",) for target in trg], dim=0)
+            edit_outer['labels'] = torch.cat([self.tok.encode(target, add_special_tokens=False, return_tensors="pt",) for target in trg], dim=0)
             print("edit_outer['labels'] tok", edit_outer['labels'])
         else:
             edit_outer['prompts_len'] = [[len(self.tok.encode(self.prompt.format(r))) for r in rephrase] for rephrase in rephrases]
-            edit_outer['labels'] = torch.stack([self.tok.encode(target, return_tensors="pt",) for target in trg], dim=0)
+            edit_outer['labels'] = torch.cat([self.tok.encode(target, return_tensors="pt",) for target in trg], dim=0)
             
         # edit_outer_image
         edit_outer_image = {}
@@ -174,10 +174,10 @@ class OKVQADataset(BaseDataset):
         edit_outer_image['labels'] = trg
         if self.config.model_name == "minigpt4" or self.config.model_name == "blip2":
             edit_outer_image['prompts_len'] = [len(self.tok.encode(self.prompt.format(s), add_special_tokens=False)) for s in src]
-            edit_outer_image['labels'] = self.tok.encode(trg, add_special_tokens=False, return_tensors="pt",)
+            edit_outer_image['labels'] = torch.cat([self.tok.encode(target, add_special_tokens=False, return_tensors="pt",) for target in trg], dim=0)
         else:
             edit_outer_image['prompts_len'] = [len(self.tok.encode(self.prompt.format(s))) for s in src]
-            edit_outer_image['labels'] = self.tok.encode(trg, return_tensors="pt",)
+            edit_outer_image['labels'] = torch.cat([self.tok.encode(target, return_tensors="pt",) for target in trg], dim=0)
         
         # loc
         # "loc": "nq question: what purpose did seasonal monsoon winds have on trade", 
