@@ -198,10 +198,10 @@ class OKVQADataset(BaseDataset):
         loc['labels'] = loc_a
         if self.config.model_name == "minigpt4" or self.config.model_name == "blip2":
             loc['prompts_len'] = [len(self.tok.encode(q, add_special_tokens=False)) for q in loc_q]
-            loc['labels'] = self.tok.encode(loc_a, add_special_tokens=False, return_tensors="pt",)
+            loc['labels'] = torch.cat([self.tok.encode(loc_a, add_special_tokens=False, return_tensors="pt",) for target in trg], dim=0)
         else:
             loc['prompts_len'] = [len(self.tok.encode(q)) for q in loc_q]
-            loc['labels'] = self.tok.encode(loc_a, return_tensors="pt",)
+            loc['labels'] = torch.cat([self.tok.encode(loc_a, return_tensors="pt",) for target in trg], dim=0)
         
         # m_loc
         loc_image = {}
@@ -210,10 +210,10 @@ class OKVQADataset(BaseDataset):
         loc_image['labels'] = m_loc_a
         if self.config.model_name == "minigpt4" or self.config.model_name == "blip2":
             loc_image['prompts_len'] = [len(self.tok.encode(self.prompt.format(q), add_special_tokens=False)) for q in m_loc_q]
-            loc_image['labels'] = self.tok.encode(m_loc_a, add_special_tokens=False, return_tensors="pt",)
+            loc_image['labels'] = torch.cat([self.tok.encode(m_loc_a, add_special_tokens=False, return_tensors="pt",) for target in trg], dim=0)
         else:
             loc_image['prompts_len'] = [len(self.tok.encode(self.prompt.format(q))) for q in m_loc_q]
-            loc_image['labels'] = self.tok.encode(m_loc_a, return_tensors="pt",)
+            loc_image['labels'] = torch.cat([self.tok.encode(m_loc_a, return_tensors="pt",) for target in trg], dim=0)
         
         # cond
         cond = self.tok(

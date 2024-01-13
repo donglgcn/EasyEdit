@@ -37,8 +37,8 @@ def train_MEND_MiniGPT4_Caption():
 
 def train_MEND_MiniGPT4_VQA():
     hparams = MENDMultimodalTrainingHparams.from_hparams('hparams/TRAINING/MEND/minigpt4.yaml')
-    train_ds = VQADataset('/localtmp/ktm8eh/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
-    eval_ds = VQADataset('/localtmp/ktm8eh/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_eval.json', config=hparams)
+    train_ds = VQADataset('/project/SDS/research/sds-rise/dongliang/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
+    eval_ds = VQADataset('/project/SDS/research/sds-rise/dongliang/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_eval.json', config=hparams)
     trainer = MultimodalTrainer(
         config=hparams,
         train_set=train_ds,
@@ -111,7 +111,7 @@ def train_MEND_Blip2OPT_VQA_Vision():
 def test_MEND_MiniGPT4_VQA():
     hparams = MENDMultimodalHparams.from_hparams('hparams/MEND/minigpt4.yaml')
     # train_ds = VQADataset('data/vqa_train.json', config=hparams)
-    eval_ds = VQADataset('/localtmp/ktm8eh/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_eval.json', config=hparams)
+    eval_ds = VQADataset('/project/SDS/research/sds-rise/dongliang/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_eval.json', config=hparams)
     trainer = MultimodalTrainer(
         config=hparams,
         train_set=eval_ds,
@@ -683,7 +683,7 @@ def test_IKE_MiniGPT4_OKVQA():
 if __name__ == "__main__":
     
     # train_MEND_MiniGPT4_Caption()
-    # train_MEND_MiniGPT4_VQA()
+    train_MEND_MiniGPT4_VQA()
     # train_MEND_Blip2OPT_Caption()
     # train_MEND_Blip2OPT_VQA()
     # train_MEND_Blip2OPT_VQA_Vision()
@@ -700,7 +700,7 @@ if __name__ == "__main__":
     
     # test_SERAC_MiniGPT4_Caption()
     # test_MEND_MiniGPT4_VQA()
-    test_MEND_MiniGPT4_OKVQA()
+    # test_MEND_MiniGPT4_OKVQA()
     # Generate_Embedding_for_IKE()
     # test_IKE_MiniGPT4_VQA_debug()
     # test_IKE_Blip2OPT_VQA()
