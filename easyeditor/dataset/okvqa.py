@@ -21,7 +21,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))
 from vqautils.vqa import VQA
 
 class OKVQADataset(BaseDataset):
-    def __init__(self, data_dir: str, size:  typing.Optional[int] = None, config=None, *args, **kwargs):
+    def __init__(self, data_dir: str, size:  typing.Optional[int] = None, config=None, types: typing.Union[str, typing.List[str]]=None,*args, **kwargs):
         """
         vis_root (string): Root directory of images (e.g. coco/images/)
         ann_root (string): directory to store the annotation file
@@ -62,8 +62,12 @@ class OKVQADataset(BaseDataset):
         self.okvqa          = VQA(annotation_file=annfile, question_file=quesfile)
         self.annIds         = self.okvqa.getQuesIds()
         self.annotation     = self.okvqa.loadQA(self.annIds)
+        if types is not None:
+            if isinstance(types, str):
+                types = [types]
+            self.annotation = [a for a in self.annotation if a['counterfact_type'] in types]
         if size is not None:
-            self.annotation = self.annotation[:size]  
+            self.annotation = self.annotation[:size]
         for i, record in enumerate(self.annotation):
             
             if record['counterfact_answer'] == "":
