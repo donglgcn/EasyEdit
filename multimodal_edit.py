@@ -668,7 +668,7 @@ def test_IKE_MiniGPT4_OKVQA():
     editor = MultimodalEditor.from_hparams(hparams)
     train_ds = VQADataset('/localtmp/ktm8eh/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
     hparams.rephrase_image = '/localtmp/ktm8eh/datasets/VQA/rephrased_images/'
-    eval_ds = OKVQADataset('vqautils', config=hparams)
+    eval_ds = OKVQADataset('vqautils', types="image-text based", config=hparams)
     metrics, edited_model, _ = editor.edit_dataset(
         ds=eval_ds,
         train_ds=train_ds,
@@ -683,7 +683,7 @@ def test_IKE_MiniGPT4_OKVQA():
 if __name__ == "__main__":
     
     # train_MEND_MiniGPT4_Caption()
-    train_MEND_MiniGPT4_VQA()
+    # train_MEND_MiniGPT4_VQA()
     # train_MEND_Blip2OPT_Caption()
     # train_MEND_Blip2OPT_VQA()
     # train_MEND_Blip2OPT_VQA_Vision()
@@ -706,7 +706,7 @@ if __name__ == "__main__":
     # test_IKE_Blip2OPT_VQA()
     # test_IKE_MiniGPT4_VQA()
     # test_IKE_Blip2OPT_VQA_debug()
-    # test_IKE_MiniGPT4_OKVQA()
+    test_IKE_MiniGPT4_OKVQA()
     
 
     # edit_MEND_MiniGPT4_Caption()
