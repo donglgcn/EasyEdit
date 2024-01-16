@@ -21,7 +21,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))
 from vqautils.vqa import VQA
 
 class OKVQADataset(BaseDataset):
-    def __init__(self, data_dir: str, size:  typing.Optional[int] = None, config=None, types: typing.Union[str, typing.List[str]]=None,*args, **kwargs):
+    def __init__(self, data_dir: str, size:  typing.Optional[int] = None, debug=False, config=None, types: typing.Union[str, typing.List[str]]=None,*args, **kwargs):
         """
         vis_root (string): Root directory of images (e.g. coco/images/)
         ann_root (string): directory to store the annotation file
@@ -81,7 +81,14 @@ class OKVQADataset(BaseDataset):
             # locality_image_path = os.path.join(self.vis_root, record['m_loc'])
             
             image = Image.open(image_path).convert("RGB")
-            rephrase_images = [Image.open(rephrase_image_path).convert("RGB") for rephrase_image_path in rephrase_image_paths]
+
+            # debug: replace all rephrase images with the same blank image
+            if debug:
+                rephrase_images = [Image.open(rephrase_image_path).convert("RGB") for rephrase_image_path in rephrase_image_paths]
+                # blank_img=Image.new('RGB', (364, 364), color = 'black')
+                # rephrase_images = [blank_img for rephrase_image_path in rephrase_image_paths]
+            else:
+                rephrase_images = [Image.open(rephrase_image_path).convert("RGB") for rephrase_image_path in rephrase_image_paths]
             # locality_image = Image.open(locality_image_path).convert("RGB")
 
             image = self.vis_processor(image)
@@ -115,6 +122,8 @@ class OKVQADataset(BaseDataset):
                     self.okvqa.qqa[record['question_id']]["question"]
                 )
             }
+            if debug:
+                item['rephrase_prompts'] = ["?"]
             
             item['question_type'] = record['question_type']
             item['counterfact_type'] = record['counterfact_type']

@@ -1,3 +1,4 @@
+import os
 import torch
 import types
 from statistics import mean
@@ -125,7 +126,9 @@ def test_MEND_MiniGPT4_OKVQA():
     hparams = MENDMultimodalHparams.from_hparams('hparams/MEND/minigpt4.yaml')
     # train_ds = VQADataset('data/vqa_train.json', config=hparams)
     hparams.rephrase_image = '/project/SDS/research/sds-rise/dongliang/datasets/VQA/rephrased_images/'
-    eval_ds = OKVQADataset('vqautils', config=hparams)    
+    eval_ds = OKVQADataset('vqautils', debug=True, config=hparams)    
+    hparams.results_dir='./results/test_MEND_MiniGPT4_OKVQA_DEBUG_NOrephrasequestion'
+    os.makedirs(hparams.results_dir, exist_ok=True)
     trainer = MultimodalTrainer(
         config=hparams,
         train_set=eval_ds,
@@ -666,9 +669,9 @@ def test_IKE_MiniGPT4_OKVQA():
     
     hparams = IKEMultimodalHyperParams.from_hparams('hparams/IKE/minigpt4.yaml')
     editor = MultimodalEditor.from_hparams(hparams)
-    train_ds = VQADataset('/localtmp/ktm8eh/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
-    hparams.rephrase_image = '/localtmp/ktm8eh/datasets/VQA/rephrased_images/'
-    eval_ds = OKVQADataset('vqautils', types="image-text based", config=hparams)
+    train_ds = VQADataset('/project/SDS/research/sds-rise/dongliang/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
+    hparams.rephrase_image = '/project/SDS/research/sds-rise/dongliang/datasets/VQA/rephrased_images/'
+    eval_ds = OKVQADataset('vqautils', debug=True, config=hparams)
     metrics, edited_model, _ = editor.edit_dataset(
         ds=eval_ds,
         train_ds=train_ds,
@@ -676,7 +679,7 @@ def test_IKE_MiniGPT4_OKVQA():
     )
     #dump metrics
     import pickle
-    with open('okvqa_metrics.pkl', 'wb') as f:
+    with open('okvqa_metrics_debug_nonerephrasequestions.pkl', 'wb') as f:
         pickle.dump(metrics, f)
 
     
