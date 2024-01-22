@@ -2,10 +2,10 @@ import os
 import asyncio
 from tqdm import tqdm
 from openai import OpenAI
-
+from KEY import API_KEY
 client = OpenAI(
     # This is the default and can be omitted
-    api_key="",
+    api_key=API_KEY,
 )
 
 import json
@@ -53,11 +53,11 @@ def load_questions_and_rephrase(input_file, log_file="./output.log"):
 
 
 # Example usage
-input_json_file = 'OpenEnded_mscoco_val2014_questions.json'  # Replace with your JSON file path
+input_json_file = './vqautils/OpenEnded_mscoco_train2014_questions.json'  # Replace with your JSON file path
 rephrased_questions = load_questions_and_rephrase(input_json_file)
 
 # If you need to save the rephrased questions to a new JSON file
-with open('rephrased_questions.json', 'w') as outfile:
+with open('rephrased_questions_train2014.json', 'w') as outfile:
     json.dump({"rephrased_questions": rephrased_questions}, outfile, indent=4)
 
 print(json.dumps({"rephrased_questions": rephrased_questions}, indent=4))

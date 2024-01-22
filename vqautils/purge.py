@@ -71,7 +71,7 @@ def merge_image_object_json(image_object, original_data):
     with open(original_data, 'r') as file:
         data2 = json.load(file)
     index = 0
-    data2['annotations'] = data1['counterfact_type']
+    data2['annotations'] = data1['pred_locality_image_object']
     
     #f dump
     with open('./vqautils/output.json', 'w') as outfile:
@@ -161,10 +161,21 @@ def compare_jsons(json1, json2, json3):
         json.dump({"counterfact_type": data}, outfile, indent=4)
 
 
-
+def purge_locality_answer(locality_file):
+    with open(locality_file, 'r') as file:
+        data = json.load(file)
+    for i, item in enumerate(data['pred_locality_answer']):
+        # Filter out empty strings from the rephrased questions
+        item['locality_answer'] = item['locality_answer'].strip("'")
+        item['locality_answer'] = item['locality_answer'].strip('"')
+        data['pred_locality_answer'][i] = item
+    with open('locality_file_purge.json', 'w') as outfile:
+        json.dump(data, outfile, indent=4)
+    return data
 
 if __name__ == '__main__':
     # compare_jsons('vqautils/counterfact_type_new.json', 'vqautils/counterfact_type.json', 'vqautils/counterfact_type_previous.json')
     # rename_folder()
     # purge_rephrased_questions('rephrased_questions.json', 'rephrased_questions_purged.json')
-    merge_image_object_json('./vqautils/counterfact_type_merge.json', './vqautils/mscoco_val2014_annotations.json')
+    # purge_locality_answer('./locality_answer.json')
+    merge_image_object_json('./pred_locality_image_object.json', './vqautils/mscoco_val2014_annotations.json')
