@@ -21,7 +21,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))
 from vqautils.vqa import VQA
 
 class OKVQADataset(BaseDataset):
-    def __init__(self, data_dir: str, size:  typing.Optional[int] = None, debug=False, config=None, types: typing.Union[str, typing.List[str]]=None,*args, **kwargs):
+    def __init__(self, data_dir: str, size:  typing.Optional[int] = None, debug=False, locality_root: str = None, config=None, types: typing.Union[str, typing.List[str]]=None,*args, **kwargs):
         """
         vis_root (string): Root directory of images (e.g. coco/images/)
         ann_root (string): directory to store the annotation file
@@ -42,6 +42,7 @@ class OKVQADataset(BaseDataset):
                 
         vis_root = config.coco_image
         rephrase_root = config.rephrase_image
+        self.locality_root = locality_root
         super().__init__(vis_processor, vis_root, rephrase_root, [])
 
         self.config = config
@@ -78,18 +79,18 @@ class OKVQADataset(BaseDataset):
             
             rephrase_image_folder = os.path.join(self.rephrase_root, str(record['question_id']))
             rephrase_image_paths = sorted([os.path.join(rephrase_image_folder, file) for file in os.listdir(rephrase_image_folder)])
-            # locality_image_path = os.path.join(self.vis_root, record['m_loc'])
+            locality_image_path = os.path.join(self.vis_root, str(record['question_id']), '0.png')
             
             image = Image.open(image_path).convert("RGB")
 
             # debug: replace all rephrase images with the same blank image
             if debug:
-                rephrase_images = [Image.open(rephrase_image_path).convert("RGB") for rephrase_image_path in rephrase_image_paths]
-                # blank_img=Image.new('RGB', (364, 364), color = 'black')
-                # rephrase_images = [blank_img for rephrase_image_path in rephrase_image_paths]
+                # rephrase_images = [Image.open(rephrase_image_path).convert("RGB") for rephrase_image_path in rephrase_image_paths]
+                blank_img=Image.new('RGB', (364, 364), color = 'black')
+                rephrase_images = [blank_img for rephrase_image_path in rephrase_image_paths]
             else:
                 rephrase_images = [Image.open(rephrase_image_path).convert("RGB") for rephrase_image_path in rephrase_image_paths]
-            # locality_image = Image.open(locality_image_path).convert("RGB")
+            locality_image = Image.open(locality_image_path).convert("RGB")
 
             image = self.vis_processor(image)
             
@@ -107,7 +108,7 @@ class OKVQADataset(BaseDataset):
             rephrase_images = torch.stack(processed_images, dim=0)
 
             # rephrase_images = self.vis_processor(rephrase_images)  
-            # locality_image = self.vis_processor(locality_image)  
+            locality_image = self.vis_processor(locality_image)  
 
             item = {
                 'prompt': self.okvqa.qqa[record['question_id']]["question"],
@@ -122,8 +123,12 @@ class OKVQADataset(BaseDataset):
                     self.okvqa.qqa[record['question_id']]["question"]
                 )
             }
-            if debug:
-                item['rephrase_prompts'] = ["?"]
+            # if debug:
+            #     item['rephrase_prompts'] = ["?"]
+
+            item['multimodal_locality_image'] = locality_image
+            item['multimodal_locality_prompt'] = item['prompt']
+            item['multimodal_locality_ground_truth'] = record['locality_answer']
             
             item['question_type'] = record['question_type']
             item['counterfact_type'] = record['counterfact_type']
@@ -150,9 +155,9 @@ class OKVQADataset(BaseDataset):
         image_rephrases = [b['image_rephrases'] for b in batch]
         # loc_q = [b["locality_prompt"] for b in batch]
         # loc_a = [b["locality_ground_truth"] for b in batch]
-        # m_loc_image = [b['multimodal_locality_image'] for b in batch]
-        # m_loc_q = [b['multimodal_locality_prompt'] for b in batch]
-        # m_loc_a = [b['multimodal_locality_ground_truth'] for b in batch]
+        m_loc_image = [b['multimodal_locality_image'] for b in batch]
+        m_loc_q = [b['multimodal_locality_prompt'] for b in batch]
+        m_loc_a = [b['multimodal_locality_ground_truth'] for b in batch]
         
         # edit_inner
         edit_inner = {}
@@ -200,11 +205,6 @@ class OKVQADataset(BaseDataset):
         # "m_loc_a": "riding"
         loc_q = ["nq question: what purpose did seasonal monsoon winds have on trade" for b in batch]
         loc_a = ["enabled European empire expansion into the Americas and trade routes to become established across the Atlantic and Pacific oceans" for b in batch]
-        m_loc_image = Image.open(os.path.join(self.vis_root,"COCO_val2014_000000297147.jpg")).convert("RGB")
-        m_loc_image = self.vis_processor(m_loc_image)
-        m_loc_image = [m_loc_image for b in batch]
-        m_loc_q = ["What sport can you use this for?" for b in batch]
-        m_loc_a = ["riding" for b in batch]
         loc = {}
         loc['image'] = None
         loc['text_input'] = [" ".join([q, a]) for q, a in zip(loc_q, loc_a)]

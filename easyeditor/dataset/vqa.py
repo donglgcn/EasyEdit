@@ -18,7 +18,7 @@ import torch
 import transformers
 
 class VQADataset(BaseDataset):
-    def __init__(self, data_dir: str, size:  typing.Optional[int] = None, config=None, *args, **kwargs):
+    def __init__(self, data_dir: str, size:  typing.Optional[int] = None, debug=False, config=None, *args, **kwargs):
         """
         vis_root (string): Root directory of images (e.g. coco/images/)
         ann_root (string): directory to store the annotation file
@@ -64,7 +64,11 @@ class VQADataset(BaseDataset):
             locality_image = Image.open(locality_image_path).convert("RGB")
 
             image = self.vis_processor(image)
-            rephrase_image = self.vis_processor(rephrase_image)  
+            if debug:
+                blank_img=Image.new('RGB', (364, 364), color = 'black')
+                rephrase_image = self.vis_processor(blank_img)
+            else:    
+                rephrase_image = self.vis_processor(rephrase_image)  
             locality_image = self.vis_processor(locality_image)  
                       
             item = {
