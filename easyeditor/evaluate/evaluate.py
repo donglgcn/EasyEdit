@@ -343,12 +343,13 @@ def compute_icl_multimodal_edit_quality(
     
     if "locality_prompt" in record.keys():
         locality_acc, _ = icl_multimodal_lm_eval(model, model_name, hparams, tok, icl_examples,
-                                loc_a, f'New Fact: {loc_q} {loc_a}\nPrompt: {loc_q}', None)
+                                loc_a, f'New Fact: {prompt} {target}\nPrompt: {loc_q}', None)
         ret['locality_acc'] = locality_acc
     
     if "multimodal_locality_image" in record.keys():
+        # we should not know the answer of the locality question.
         locality_image_acc, _ = icl_multimodal_lm_eval(model, model_name, hparams, tok, icl_examples,
-                               m_loc_a, f'New Fact: {m_loc_q} {m_loc_a}\nPrompt: {m_loc_q}', m_loc_image)
+                               m_loc_a, f'New Fact: {prompt} {target}\nPrompt: {m_loc_q}', m_loc_image)
         ret['locality_image_acc'] = locality_image_acc
             
     return ret

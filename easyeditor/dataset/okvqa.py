@@ -79,7 +79,7 @@ class OKVQADataset(BaseDataset):
             
             rephrase_image_folder = os.path.join(self.rephrase_root, str(record['question_id']))
             rephrase_image_paths = sorted([os.path.join(rephrase_image_folder, file) for file in os.listdir(rephrase_image_folder)])
-            locality_image_path = os.path.join(self.vis_root, str(record['question_id']), '0.png')
+            locality_image_path = os.path.join(self.locality_root, str(record['question_id']), '0.png')
             
             image = Image.open(image_path).convert("RGB")
 
