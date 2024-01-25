@@ -425,7 +425,7 @@ def compute_icl_locality_label_quality(model, model_name, hparams, tok, icl_exam
         else:
             post_image_base_logits = post_image_base_outputs
     base_image_outputs_len = (base_image_outputs.labels == -100).sum(dim=-1)-2 # doesn't count bos token and index starts from 0
-    print("m_loc_a: ", pre_prompt.labels)
+    print("m_loc_a: ", pre_prompt['labels'])
     print("base_image_outputs.labels: ", base_image_outputs.labels)
     truncated_base_image_logits = base_image_logits[:, base_image_outputs_len[0]:]
     truncated_post_image_base_logits = post_image_base_logits[:, base_image_outputs_len[0]:]  
