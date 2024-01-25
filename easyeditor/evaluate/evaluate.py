@@ -413,22 +413,23 @@ def compute_icl_locality_label_quality(model, model_name, hparams, tok, icl_exam
     samples_post = prepare_multimodal_edit(hparams, tok, m_loc_a, post_prompt, m_loc_image)
     samples_pre = prepare_multimodal_edit(hparams, tok, m_loc_a, pre_prompt, m_loc_image)
     with torch.no_grad():
-        base_image_outputs = model(samples_post)
+        base_image_outputs = model(samples_pre)
         if not isinstance(base_image_outputs, torch.Tensor):
             base_image_logits = base_image_outputs.logits
         else:
             base_image_logits = base_image_outputs
-        post_image_base_outputs = model(samples_pre)
+        post_image_base_outputs = model(samples_post)
         # print("post_local_batch_labels: ", post_local_batch_labels)
         if not isinstance(post_image_base_outputs, torch.Tensor):
             post_image_base_logits = post_image_base_outputs.logits
         else:
             post_image_base_logits = post_image_base_outputs
-    base_image_outputs_len = (base_image_outputs.labels == -100).sum(dim=-1)-2 # doesn't count bos token and index starts from 0
-    print("m_loc_a: ", pre_prompt['labels'])
-    print("base_image_outputs.labels: ", base_image_outputs.labels)
+    base_image_outputs_len = (base_image_outputs.labels == -100).sum(dim=-1)-1 # index starts from 0
+    post_image_base_outputs_len = (post_image_base_outputs.labels == -100).sum(dim=-1)-1
+    # print("m_loc_a: ", samples_pre['labels'])
+    # print("base_image_outputs.labels: ", base_image_outputs.labels)
     truncated_base_image_logits = base_image_logits[:, base_image_outputs_len[0]:]
-    truncated_post_image_base_logits = post_image_base_logits[:, base_image_outputs_len[0]:]  
+    truncated_post_image_base_logits = post_image_base_logits[:, post_image_base_outputs_len[0]:]  
     post_image_base_logits_softmax_top_k = torch.topk(torch.nn.functional.softmax(truncated_post_image_base_logits, dim=-1), k=10, dim=-1).indices
     base_image_logits_softmax_top_k = torch.topk(torch.nn.functional.softmax(truncated_base_image_logits, dim=-1), k=10, dim=-1).indices
     image_loc_acc = sum(post_image_base_logits_softmax_top_k.view(-1) == base_image_logits_softmax_top_k.view(-1))/post_image_base_logits_softmax_top_k.view(-1).shape[0]
