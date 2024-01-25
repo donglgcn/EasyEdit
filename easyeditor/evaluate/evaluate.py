@@ -399,6 +399,42 @@ def prepare_multimodal_edit(hparams,
     } 
     return ret
 
+def compute_icl_locality_label_quality(model, model_name, hparams, tok, icl_examples, pre_icl_examples, 
+                                       record: typing.Dict, device):
+    if "multimodal_locality_image" in record.keys():
+        m_loc_image = record["multimodal_locality_image"] if record["multimodal_locality_image"].is_cuda else record["multimodal_locality_image"].to(hparams.device)
+        m_loc_q = record["multimodal_locality_prompt"]
+        m_loc_a = record["multimodal_locality_ground_truth"]
+        target = record["target"]
+        prompt = record["prompt"]
+
+    post_prompt = [''.join(icl_examples) + f'New Fact: {prompt} {target}\nPrompt: {m_loc_q}']
+    pre_prompt = [''.join(pre_icl_examples) + f'New Fact: {prompt} {target}\nPrompt: {m_loc_q}']
+    samples_post = prepare_multimodal_edit(hparams, tok, m_loc_a, post_prompt, m_loc_image)
+    samples_pre = prepare_multimodal_edit(hparams, tok, m_loc_a, pre_prompt, m_loc_image)
+    with torch.no_grad():
+        base_image_outputs = model(samples_post)
+        if not isinstance(base_image_outputs, torch.Tensor):
+            base_image_logits = base_image_outputs.logits
+        else:
+            base_image_logits = base_image_outputs
+        post_image_base_outputs = model(samples_pre)
+        # print("post_local_batch_labels: ", post_local_batch_labels)
+        if not isinstance(post_image_base_outputs, torch.Tensor):
+            post_image_base_logits = post_image_base_outputs.logits
+        else:
+            post_image_base_logits = post_image_base_outputs
+    base_image_outputs_len = (base_image_outputs.labels == -100).sum(dim=-1)-2 # doesn't count bos token and index starts from 0
+    print("m_loc_a: ", pre_prompt.labels)
+    print("base_image_outputs.labels: ", base_image_outputs.labels)
+    truncated_base_image_logits = base_image_logits[:, base_image_outputs_len[0]:]
+    truncated_post_image_base_logits = post_image_base_logits[:, base_image_outputs_len[0]:]  
+    post_image_base_logits_softmax_top_k = torch.topk(torch.nn.functional.softmax(truncated_post_image_base_logits, dim=-1), k=10, dim=-1).indices
+    base_image_logits_softmax_top_k = torch.topk(torch.nn.functional.softmax(truncated_base_image_logits, dim=-1), k=10, dim=-1).indices
+    image_loc_acc = sum(post_image_base_logits_softmax_top_k.view(-1) == base_image_logits_softmax_top_k.view(-1))/post_image_base_logits_softmax_top_k.view(-1).shape[0]
+    print("image_loc_acc: ", image_loc_acc)
+    return image_loc_acc
+
 def compute_multimodal_edit_quality(model, batch):
     
     with torch.no_grad():

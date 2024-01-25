@@ -263,6 +263,12 @@ class MiniGPT4(Blip2Base):
                 labels=targets,
             )
         loss = outputs.loss
+        # print('inputs_embeds: ', inputs_embeds.shape)
+        # print('attention_mask: ', attention_mask.shape)
+        # print('targets: ', targets.shape)
+        # print('target', targets)
+        # print('outputs.logits, ', outputs.logits.shape)
+        # print('outputs.logits, ', outputs.logits)
 
         # return {"loss": loss}
         return MiniGPTOutput(

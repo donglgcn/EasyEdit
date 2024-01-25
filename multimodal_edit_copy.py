@@ -676,7 +676,7 @@ def test_IKE_MiniGPT4_OKVQA():
     editor = MultimodalEditor.from_hparams(hparams)
     train_ds = VQADataset('/project/SDS/research/sds-rise/dongliang/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
     hparams.rephrase_image = '/project/SDS/research/sds-rise/dongliang/datasets/VQA/rephrased_images/'
-    eval_ds = OKVQADataset('vqautils', debug=True, locality_root='/project/SDS/research/sds-rise/dongliang/datasets/VQA/locality_images_dalle2/', 
+    eval_ds = OKVQADataset('vqautils', size=10, locality_root='/project/SDS/research/sds-rise/dongliang/datasets/VQA/locality_images_dalle2/', 
                            config=hparams)
     metrics, edited_model, _ = editor.edit_dataset(
         ds=eval_ds,
@@ -685,7 +685,7 @@ def test_IKE_MiniGPT4_OKVQA():
     )
     #dump metrics
     import pickle
-    with open('okvqa_metrics_debug_blackimage.pkl', 'wb') as f:
+    with open('okvqa_metrics_debug_locality.pkl', 'wb') as f:
         pickle.dump(metrics, f)
 
 def load_metrics(path):
@@ -722,13 +722,13 @@ if __name__ == "__main__":
     
     # test_SERAC_MiniGPT4_Caption()
     # test_MEND_MiniGPT4_VQA()
-    test_MEND_MiniGPT4_OKVQA()
+    # test_MEND_MiniGPT4_OKVQA()
     # Generate_Embedding_for_IKE()
     # test_IKE_MiniGPT4_VQA_debug()
     # test_IKE_Blip2OPT_VQA()
     # test_IKE_MiniGPT4_VQA()
     # test_IKE_Blip2OPT_VQA_debug()
-    # test_IKE_MiniGPT4_OKVQA()
+    test_IKE_MiniGPT4_OKVQA()
     
 
     # edit_MEND_MiniGPT4_Caption()

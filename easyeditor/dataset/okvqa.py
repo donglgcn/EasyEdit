@@ -85,12 +85,16 @@ class OKVQADataset(BaseDataset):
 
             # debug: replace all rephrase images with the same blank image
             if debug:
-                # rephrase_images = [Image.open(rephrase_image_path).convert("RGB") for rephrase_image_path in rephrase_image_paths]
-                blank_img=Image.new('RGB', (364, 364), color = 'black')
-                rephrase_images = [blank_img for rephrase_image_path in rephrase_image_paths]
+                rephrase_images = [Image.open(rephrase_image_path).convert("RGB") for rephrase_image_path in rephrase_image_paths]
+                # blank_img=Image.new('RGB', (364, 364), color = 'black')
+                # rephrase_images = [blank_img for rephrase_image_path in rephrase_image_paths]
             else:
                 rephrase_images = [Image.open(rephrase_image_path).convert("RGB") for rephrase_image_path in rephrase_image_paths]
+            
+            
             locality_image = Image.open(locality_image_path).convert("RGB")
+            if debug:
+                locality_image=locality_image # image
 
             image = self.vis_processor(image)
             
@@ -128,7 +132,10 @@ class OKVQADataset(BaseDataset):
 
             item['multimodal_locality_image'] = locality_image
             item['multimodal_locality_prompt'] = item['prompt']
-            item['multimodal_locality_ground_truth'] = record['locality_answer']
+            if debug:
+                item['multimodal_locality_ground_truth'] = record['counterfact_answer']
+            else:
+                item['multimodal_locality_ground_truth'] = record['locality_answer']
             
             item['question_type'] = record['question_type']
             item['counterfact_type'] = record['counterfact_type']
@@ -176,11 +183,11 @@ class OKVQADataset(BaseDataset):
         edit_outer['image'] = torch.stack(image, dim=0)
         edit_outer['text_input'] = [[self.prompt.format(r) + f"{t}" for r in rephrase] for rephrase, t in zip(rephrases, trg)]
         edit_outer['labels'] = trg
-        print("edit_outer['labels']", edit_outer['labels'])
+        # print("edit_outer['labels']", edit_outer['labels'])
         if self.config.model_name == "minigpt4" or self.config.model_name == "blip2":
             edit_outer['prompts_len'] = [[len(self.tok.encode(self.prompt.format(r), add_special_tokens=False)) for r in rephrase] for rephrase in rephrases]
             edit_outer['labels'] = torch.cat([self.tok.encode(target, add_special_tokens=False, return_tensors="pt",) for target in trg], dim=0)
-            print("edit_outer['labels'] tok", edit_outer['labels'])
+            # print("edit_outer['labels'] tok", edit_outer['labels'])
         else:
             edit_outer['prompts_len'] = [[len(self.tok.encode(self.prompt.format(r))) for r in rephrase] for rephrase in rephrases]
             edit_outer['labels'] = torch.cat([self.tok.encode(target, return_tensors="pt",) for target in trg], dim=0)
@@ -211,22 +218,24 @@ class OKVQADataset(BaseDataset):
         loc['labels'] = loc_a
         if self.config.model_name == "minigpt4" or self.config.model_name == "blip2":
             loc['prompts_len'] = [len(self.tok.encode(q, add_special_tokens=False)) for q in loc_q]
-            loc['labels'] = torch.cat([self.tok.encode(loc_a, add_special_tokens=False, return_tensors="pt",) for target in trg], dim=0)
+            loc['labels'] = torch.cat([self.tok.encode(loc_ans, add_special_tokens=False, return_tensors="pt",) for loc_ans in loc_a], dim=0)
         else:
             loc['prompts_len'] = [len(self.tok.encode(q)) for q in loc_q]
-            loc['labels'] = torch.cat([self.tok.encode(loc_a, return_tensors="pt",) for target in trg], dim=0)
+            loc['labels'] = torch.cat([self.tok.encode(loc_ans, return_tensors="pt",) for loc_ans in loc_a], dim=0)
         
         # m_loc
         loc_image = {}
         loc_image['image'] = torch.stack(m_loc_image, dim=0)
         loc_image['text_input'] = [self.prompt.format(q) + a for q, a in zip(m_loc_q, m_loc_a)]
         loc_image['labels'] = m_loc_a
+        print("loc_image['labels']", loc_image['labels'])
         if self.config.model_name == "minigpt4" or self.config.model_name == "blip2":
             loc_image['prompts_len'] = [len(self.tok.encode(self.prompt.format(q), add_special_tokens=False)) for q in m_loc_q]
-            loc_image['labels'] = torch.cat([self.tok.encode(m_loc_a, add_special_tokens=False, return_tensors="pt",) for target in trg], dim=0)
+            loc_image['labels'] = torch.cat([self.tok.encode(m_loc_ans, add_special_tokens=False, return_tensors="pt",) for m_loc_ans in m_loc_a], dim=0)
+            print("loc_image['labels'] tok", loc_image['labels'])
         else:
             loc_image['prompts_len'] = [len(self.tok.encode(self.prompt.format(q))) for q in m_loc_q]
-            loc_image['labels'] = torch.cat([self.tok.encode(m_loc_a, return_tensors="pt",) for target in trg], dim=0)
+            loc_image['labels'] = torch.cat([self.tok.encode(m_loc_ans, return_tensors="pt",) for m_loc_ans in m_loc_a], dim=0)
         
         # cond
         cond = self.tok(
