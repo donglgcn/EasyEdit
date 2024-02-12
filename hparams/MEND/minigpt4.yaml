@@ -76,5 +76,5 @@ state_dict_file: hugging_cache/eva_vit_g.pth
 pretrained_ckpt: hugging_cache/pretrained_minigpt4_7b.pth
 
 # image
-coco_image: /localtmp/ktm8eh/datasets/EasyEdit/
-rephrase_image: /localtmp/ktm8eh/datasets/EasyEdit/
+coco_image: /project/SDS/research/sds-rise/dongliang/datasets/EasyEdit
+rephrase_image: /project/SDS/research/sds-rise/dongliang/datasets/EasyEdit
