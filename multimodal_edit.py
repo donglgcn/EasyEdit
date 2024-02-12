@@ -16,12 +16,12 @@ def print_result(metrics):
     rephrase_acc = mean([m['post']['rephrase_acc'].item() for m in metrics])
     rephrase_image_acc = mean([m['post']['rephrase_image_acc'].item() for m in metrics])
     locality_acc = mean([m['post']['locality_acc'].item() for m in metrics])
-    locality_image_acc = mean([m['post']['locality_image_acc'].item() for m in metrics])
+    locality_image_acc = mean([m['post']['multimodal_locality_acc'].item() for m in metrics])
     print(f'rewrite_acc: {rewrite_acc}')
     print(f'rephrase_acc: {rephrase_acc}')
     print(f'rephrase_image_acc: {rephrase_image_acc}')
     print(f'locality_acc: {locality_acc}')
-    print(f'locality_image_acc: {locality_image_acc}')
+    print(f'multimodal_locality_acc: {locality_image_acc}')
 
 def train_MEND_MiniGPT4_Caption():
     hparams = MENDMultimodalTrainingHparams.from_hparams('hparams/TRAINING/MEND/minigpt4.yaml')
@@ -147,6 +147,18 @@ def train_SERAC_MiniGPT4_Caption():
     hparams = SERACMultimodalTrainingHparams.from_hparams('hparams/TRAINING/SERAC/minigpt4.yaml')
     train_ds = CaptionDataset('data/caption_train_edit.json', config=hparams)
     eval_ds = CaptionDataset('data/caption_eval_edit.json', config=hparams)
+    trainer = MultimodalTrainer(
+        config=hparams,
+        train_set=train_ds,
+        val_set=eval_ds
+    )
+    
+    trainer.run()
+    
+def train_SERAC_MiniGPT4_Caption_debug():
+    hparams = SERACMultimodalTrainingHparams.from_hparams('hparams/TRAINING/SERAC/minigpt4.yaml')
+    train_ds = CaptionDataset('data/caption_train_edit.json', config=hparams, size=5)
+    eval_ds = CaptionDataset('data/caption_eval_edit.json', config=hparams, size=5)
     trainer = MultimodalTrainer(
         config=hparams,
         train_set=train_ds,
@@ -487,7 +499,7 @@ def Generate_Embedding_for_IKE():
     sentence_model = SentenceTransformer(hparams.sentence_model_name).to(f'cuda:{hparams.device}')
     encode_ike_facts_multimodal(sentence_model, train_ds, hparams)
     
-def test_IKE_MiniGPT4_VQA():
+def test_IKE_MiniGPT4_Caption():
     
     hparams = IKEMultimodalHyperParams.from_hparams('hparams/IKE/minigpt4.yaml')
     editor = MultimodalEditor.from_hparams(hparams)
@@ -495,7 +507,7 @@ def test_IKE_MiniGPT4_VQA():
     eval_ds = VQADataset('/localtmp/ktm8eh/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_eval.json', config=hparams)
     metrics, edited_model, _ = editor.edit_dataset(
         ds=eval_ds,
-        train_ds=train_ds,
+        train_ds=eval_ds,
         keep_original_weight=True        
     )
     
@@ -515,12 +527,26 @@ def test_IKE_MiniGPT4_VQA_debug():
     
     print_result(metrics)
     
+def test_IKE_MiniGPT4_VQA():
+    
+    hparams = IKEMultimodalHyperParams.from_hparams('hparams/IKE/minigpt4.yaml')
+    editor = MultimodalEditor.from_hparams(hparams)
+    # train_ds = VQADataset('data/vqa_train.json', config=hparams, size=5)
+    eval_ds = VQADataset('data/vqa_eval.json', config=hparams)
+    metrics, edited_model, _ = editor.edit_dataset(
+        ds=eval_ds,
+        train_ds=eval_ds,
+        keep_original_weight=True        
+    )
+    
+    print_result(metrics)
+    
 def test_IKE_Blip2OPT_VQA_debug():
     
     hparams = IKEMultimodalHyperParams.from_hparams('hparams/IKE/blip2.yaml')
     editor = MultimodalEditor.from_hparams(hparams)
-    train_ds = VQADataset('data/vqa_train.json', config=hparams, size=20)
-    eval_ds = VQADataset('data/vqa_eval.json', config=hparams, size=20)
+    train_ds = VQADataset('data/vqa_train.json', config=hparams, size=100)
+    eval_ds = VQADataset('data/vqa_eval.json', config=hparams, size=100)
     metrics, edited_model, _ = editor.edit_dataset(
         ds=eval_ds,
         train_ds=train_ds,
@@ -714,6 +740,7 @@ if __name__ == "__main__":
     
     
     # train_SERAC_MiniGPT4_Caption()
+    # train_SERAC_MiniGPT4_Caption_debug()
     # train_SERAC_MiniGPT4_VQA()
     # train_SERAC_Blip2OPT_Caption()
     # train_SERAC_Blip2OPT_VQA()
@@ -724,6 +751,8 @@ if __name__ == "__main__":
     # test_MEND_MiniGPT4_VQA()
     test_MEND_MiniGPT4_OKVQA()
     # Generate_Embedding_for_IKE()
+    # test_IKE_MiniGPT4_Caption()
+    # test_IKE_MiniGPT4_VQA()
     # test_IKE_MiniGPT4_VQA_debug()
     # test_IKE_Blip2OPT_VQA()
     # test_IKE_MiniGPT4_VQA()

@@ -42,7 +42,10 @@ class EditTrainer(BaseTrainer):
 
         # Do the edit
         start = time.time()
-        edited_model, model_info = self.model.edit(batch["edit_inner"], batch["cond"])
+        if "cond" in batch:
+            edited_model, model_info = self.model.edit(batch["edit_inner"], batch["cond"])
+        else:
+            edited_model, model_info = self.model.edit(batch["edit_inner"])
         edit_time = time.time() - start
 
         with torch.set_grad_enabled(training):

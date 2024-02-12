@@ -174,7 +174,7 @@ class BaseTrainer:
                 if self.global_iter % self.config.val_interval == 0:
                     val_info = self.validate(steps=self.config.val_steps)
                     self.echo(self.global_iter, val_info)
-                    if stopper.update(self.global_iter, val_info):
+                    if True:
                         self.save_state(val_info)  # New best
                     if stopper.should_stop():
                         LOG.info(
@@ -190,13 +190,20 @@ class BaseTrainer:
 
         if not self.config.eval_only:
             if (not self.config.debug) or self.config.save:
-                archive = torch.load(self.save_path, map_location="cpu")
-                LOG.info(
-                    f"Loading best model from step {archive['step']}, elapsed time {archive['elapsed_time']}"
-                )
-                self.model.to("cpu")
-                self.model.load_state_dict(archive["model"])
-                self.model.to(self.config.device)
+                if self.config.model_parallel:
+                    archive = torch.load(self.save_path)
+                    LOG.info(
+                        f"Loading best model from step {archive['step']}, elapsed time {archive['elapsed_time']}"
+                    )
+                    self.model.load_state_dict(archive["model"])
+                else:
+                    archive = torch.load(self.save_path, map_location="cpu")
+                    LOG.info(
+                        f"Loading best model from step {archive['step']}, elapsed time {archive['elapsed_time']}"
+                    )
+                    self.model.to("cpu")
+                    self.model.load_state_dict(archive["model"])
+                    self.model.to(self.config.device)
 
         val_steps = self.config.val_steps if self.config.debug else None
         val_info = self.validate(log=True, steps=val_steps)

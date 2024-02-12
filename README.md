@@ -16,12 +16,12 @@
   <a href="#requirements">Installation</a> •
   <a href="#use-easyedit">How To Use</a> •
     <a href="https://zjunlp.gitbook.io/easyedit">Docs</a> •
-  <a href="https://colab.research.google.com/drive/1zcj8YgeqttwkpfoHXz9O9_rWxFFufXSO?usp=sharing">Colab Tutorial</a> •
-    <a href="https://arxiv.org/abs/2308.07269">Paper</a> •
-      <a href="#citation">Citation</a> •
+    <a href="https://arxiv.org/abs/2401.01286">Paper</a> •
+    <a href="https://huggingface.co/datasets/zjunlp/KnowEdit">Benchmark</a> •
   <a href="#contributors">Contributors</a> •
   <a href="https://github.com/zjunlp/EasyEdit/blob/main/tutorial.pdf">Slides</a> •
-    <a href="http://knowlm.zjukg.cn/easyedit.mp4", target="_blank">Video</a>
+    <a href="http://knowlm.zjukg.cn/easyedit.mp4", target="_blank">Video</a> •
+   <a href="https://twitter.com/_akhaliq/status/1742371655765164133", target="_blank">Featured By AK</a>
 </p>
 </div>
 
@@ -32,14 +32,13 @@
 - [Editing Demo](#editing-demo)
 - [Knowledge Editing](#knowledge-editing)
   - [Task Definition](#task-definition)
-    - [Knowledge update](#knowledge-update)
     - [Knowledge insert](#knowledge-insert)
+    - [Knowledge update](#knowledge-update)
     - [Knowledge erase](#knowledge-erase)
   - [Evaluation](#evaluation)
 - [🌟Overview](#overview)
     - [Current Implementation](#current-implementation)
     - [Tutorial notebook](#tutorial-notebook)
-    - [Editing Performance](#editing-performance)
 - [Requirements](#requirements)
     - [🔧Pip Installation](#pip-installation)
     - [🐳Docker Installation](#docker-installation)
@@ -53,12 +52,22 @@
     - [Introduction by a Simple Example](#introduction-by-a-simple-example-1)
   - [Evaluation](#evaluation-2)
   - [Trainer](#trainer-1)
+- [Use EasyEdit with KnowEdit](#Use-easyedit-with-KnowEdit)
+  - [Dataset](#Dataset)
+  - [Usage](#usage)
+- [Editing Performance](#editing-performance)
 - [Citation](#citation)
 - [🎉Contributors](#contributors)
     - [Other Related Projects](#other-related-projects)
 
 ## 🔔News
-- **2023-12-6 The EasyEdit has supported efficient editing method [GRACE](https://github.com/thartvigsen/grace).**
+- **2024-02-09 The EasyEdit has supported the Dynamic LoRA model editing method [MELO'AAAI24](https://arxiv.org/abs/2312.11795).**
+- **2024-02-06 We release a new paper: "[EasyInstruct: An Easy-to-use Instruction Processing Framework for Large Language Models](https://arxiv.org/abs/2402.03049)" with an HF demo [EasyInstruct](https://huggingface.co/spaces/zjunlp/EasyInstruct).**
+- **2024-02-06 We release a preliminary tool [EasyDetect](https://github.com/OpenKG-ORG/EasyDetect) for LLM hallucination detection，with a [demo](http://easydetect.openkg.cn/)**.
+- **2024-01-24 The EasyEdit has supported editing [Mistral-7B](https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1) (manually update transformers==4.34.0), we have also fixed some bugs in evaluating MEND (slightly influence the performance).**
+- **2024-01-16 The EasyEdit has supported the precise model editing method [PMET'AAAI24](https://arxiv.org/abs/2308.08742).**
+- **2024-01-03  We release a new paper:"[A Comprehensive Study of Knowledge Editing for Large Language Models](https://arxiv.org/abs/2401.01286)" with a new benchmark [KnowEdit](https://huggingface.co/datasets/zjunlp/KnowEdit)! We are looking forward to any comments or discussions on this topic :)**
+- **2023-12-06 The EasyEdit has supported the lifelong model editing method [GRACE'NeurIPS24](https://arxiv.org/abs/2211.11031).**
 - **2023-11-18 Our tutorial "Knowledge Editing for Large Language Models" has been accepted by COLING 2024.**
 - **2023-10-25 Our tutorial "Knowledge Editing for Large Language Models" has been accepted by AAAI 2024.**
 
@@ -84,7 +93,12 @@ This repository is a subproject of [KnowLM](https://github.com/zjunlp/KnowLM).
 
 ---
 
-> Our AACL 2023 Tutorial [[Google Drive](https://drive.google.com/file/d/1EW-cusC_llCM0wEshkIdYuYrvfBPCDRz/view?usp=sharing)] [[Baidu Pan](https://pan.baidu.com/s/1NupastGJUzcUIAjI64J1tw?pwd=i5an)]
+> A Comprehensive Study of Knowledge Editing for Large Language Models [[paper](https://arxiv.org/abs/2401.01286)][[benchmark](https://huggingface.co/datasets/zjunlp/KnowEdit)][[code](https://github.com/zjunlp/EasyEdit)] 
+
+> AAAI 2024 Tutorial [[Google Drive]()] [[Baidu Pan]()]
+
+> AACL 2023 Tutorial [[Google Drive](https://drive.google.com/file/d/1EW-cusC_llCM0wEshkIdYuYrvfBPCDRz/view?usp=sharing)] [[Baidu Pan](https://pan.baidu.com/s/1NupastGJUzcUIAjI64J1tw?pwd=i5an)]
+
 
 ## Editing Demo
 
@@ -104,15 +118,15 @@ Deployed models may still make unpredictable errors. For example, Large Language
 
 **Knowledge editing** aims to adjust an initial base model's $(f_\theta)$ behavior($x_e \rightarrow y_e$) on the particular edit descriptor $[x_e, y_e]$ efficiently. There are usually three forms:
 
-####  Knowledge update
-LLMs often suffer from knowledge cutoff issue, EasyEdit can update outdated knowledge. such as:
-- *The president of USA: Donald Trump* $\rightarrow$ **Joe Biden**:
-    - $x_e$: Who is the president of the US? $\quad$ $y_e$: Joe Biden
-
 ####  Knowledge insert
 Inject knowledge that LLMs have not seen before. such as:
 - *How many times has Messi won the World Cup? 0* $\rightarrow$ **1**:
     - $x_e$: How many times has Messi won the World Cup? $\quad$ $y_e$: 1
+
+####  Knowledge update
+LLMs often suffer from knowledge cutoff issue, EasyEdit can update outdated knowledge. such as:
+- *The president of USA: Donald Trump* $\rightarrow$ **Joe Biden**:
+    - $x_e$: Who is the president of the US? $\quad$ $y_e$: Joe Biden
 
 ####  Knowledge erase
 EasyEdit can erase sensitive information. such as:
@@ -168,23 +182,26 @@ EasyEdit is a Python package for edit Large Language Models (LLM) like `GPT-J`, 
   - [KN](https://github.com/Hunter-DDM/knowledge-neurons): Damai Dai et al. Locate then Edit
   - [ROME](https://github.com/kmeng01/rome): Kevin Meng et al. Locate and Edit
   - [MEMIT](https://github.com/kmeng01/memit): Kevin Meng et al. Locate and Edit
+  - [GRACE](https://github.com/thartvigsen/grace): Thomas Hartvigsen et al. Memory-based
+  - [PMET](https://github.com/xpq-tech/PMET): Xiaopeng Li et al. Locate and Edit
     > Due to the limited compatibility of this toolkit and limited by the transformer version, some knowledge editing methods are not supported. You can find relevant editing methods in the following links
   - [T-Patcher](https://github.com/ZeroYuHuang/Transformer-Patcher) | [KE](https://github.com/nicola-decao/KnowledgeEditor) | [CaliNet](https://github.com/dqxiu/CaliNet)
 
 #### Current Implementation
 
 You can choose different editing methods according to your specific needs.
-| **Method** | T5 | GPT-2 | GPT-J | GPT-NEO | LlaMA | Baichuan | ChatGLM2 | InternLM | Qwen
-| :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: |
-| FT | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| AdaLoRA |  |  |  |  | ✅ |  |  | | |
-| SERAC | ✅ | ✅ | ✅ | | ✅ |  | |  | |
-| IKE | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |✅  | ✅ | ✅ |
-| MEND | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| KN   | ✅ | ✅ | ✅ |    | ✅ | ✅ | ✅ | ✅ | ✅ |
-| ROME | | ✅ | ✅ | ✅ | ✅ | ✅ |✅ | ✅ | ✅ |
-| MEMIT | | ✅ | ✅ | ✅ | ✅ | ✅ | ✅| ✅ | ✅ |
-| GRACE | | ✅| ✅ |  |  ✅|  |  |  | |
+| **Method** | T5 | GPT-2 | GPT-J | GPT-NEO | LlaMA | Baichuan | ChatGLM2 | InternLM | Qwen | Mistral
+| :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: |
+| FT | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| AdaLoRA |  |  |  |  | ✅ |  |  | | | |
+| SERAC | ✅ | ✅ | ✅ | | ✅ |  | |  | | |
+| IKE | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |✅  | ✅ | ✅ | ✅ |
+| MEND | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| KN   | ✅ | ✅ | ✅ |    | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| ROME | | ✅ | ✅ | ✅ | ✅ | ✅ |✅ | ✅ | ✅ | ✅ |
+| MEMIT | | ✅ | ✅ | ✅ | ✅ | ✅ | ✅| ✅ | ✅ | ✅ |
+| GRACE | | ✅| ✅ |  |  ✅|  |  |  | | |
+| PMET | | | ✅ |  |  ✅|  |  |  | | |
 
 <!-- |     KE       |  ✅  |  ✅  |  ✅  |  |  | -->
 
@@ -196,11 +213,109 @@ You can choose different editing methods according to your specific needs.
 
 > ❗️❗️ EasyEdit supports editing ChatGPT with FT. An edit for `gpt-3.5-turbo` returns model_name(for example, `ft: GPT-3.5-turbo-0613 :personal::7tWZkLzq`) instead model weights.
 
+> ❗️❗️ If you intend to use Mistral, please update the `transformers` library to version 4.34.0 manually. You can use the following code: `pip install transformers==4.34.0`.
+
+> ❗️❗️ If you intend to use MELO, please get the [MELO-PEFT](https://github.com/ECNU-ICALK/MELO)in this link and pip install it in your environment.
+
 **Dataset**
+
+**Benchmark: KnowEdit** [[Hugging Face]](https://huggingface.co/datasets/zjunlp/KnowEdit)[[WiseModel]](https://wisemodel.cn/datasets/zjunlp/KnowEdit)[[ModelScope]](https://www.modelscope.cn/datasets/zjunlp/KnowEdit)
+<table class="tg">
+<thead>
+  <tr>
+    <th class="tg-7btt">Task</th>
+    <th class="tg-7btt">Knowledge Insertion</th>
+    <th class="tg-7btt" colspan="4">Knowledge Modification</th>
+    <th class="tg-7btt">Knowledge Erasure</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td class="tg-c3ow">Datasets</td>
+    <td class="tg-c3ow">Wiki<sub>recent</sub></td>
+    <td class="tg-c3ow">ZsRE</td>
+    <td class="tg-c3ow">WikiBio</td>
+    <td class="tg-c3ow"> WikiData<sub>counterfact</sub></td>
+    <td class="tg-c3ow">Convsent</td>
+    <td class="tg-c3ow">Sanitation</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">Type</td>
+    <td class="tg-c3ow">Fact</td>
+    <td class="tg-c3ow">Question Answering</td>
+    <td class="tg-c3ow">Hallucination</td>
+    <td class="tg-c3ow">Counterfact</td>
+    <td class="tg-c3ow">Sentiment</td>
+    <td class="tg-c3ow">Unwanted Info</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow"># Train</td>
+    <td class="tg-c3ow">570</td>
+    <td class="tg-c3ow">10,000</td>
+    <td class="tg-c3ow">592</td>
+    <td class="tg-c3ow">1,455</td>
+    <td class="tg-c3ow">14,390</td>
+    <td class="tg-c3ow">80</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow"># Test</td>
+    <td class="tg-c3ow">1,266</td>
+    <td class="tg-c3ow">1230</td>
+    <td class="tg-c3ow">1,392</td>
+    <td class="tg-c3ow">885</td>
+    <td class="tg-c3ow">800</td>
+    <td class="tg-c3ow">80</td>
+  </tr>
+</tbody>
+</table>
+
+We provide **detailed scripts** for user to easily use KnowEdit, please refer to [examples](https://github.com/zjunlp/EasyEdit/blob/main/examples/KnowEdit.md).
+
+<details><summary> <b> dataset description </b> </summary>
+  
+- ZsRE: is a context-free question-answering task. Given a question based on the subject and relation, the model is expected to provide the correct object as the answer. 
+- Wiki<sub>recent</sub>: This dataset specifically focuses on triplets that have been recently inserted into WikiData after July 2022. 
+- WikiBio: The original dataset was created by prompting GPT-3 to generate 238 Wikipedia-style biographies using subjects from the WikiBio.
+- WikiData<sub>counterfact</sub>: Since tail entities are often not captured by models, and therefore are not suitable for testing modification edits, RippleEdit collects triplets about popular entities, where the subject corresponds to one of the top-viewed pages in Wikipedia.
+- Convsent: This is a sentiment editing task that assesses the model's ability to modify a dialog agent's sentiment on a specific topic without affecting its responses to other topics.
+- Sanitation: This dataset specifically addresses privacy concerns associated with learned language models. 
+</details>
+
+
+<details><summary> <b> dataset structure </b> </summary>
+  
+```text
+knowedit
+├── WikiBio
+│   ├── wikibio-test-all.json
+│   └── wikibio-train-all.json
+├── ZsRE
+│   └── ZsRE-test-all.json
+├── wiki_counterfact
+│   ├── test_cf.json
+│   └── train_cf.json
+├── convsent
+│   ├── blender_test.json
+│   ├── blender_train.json
+│   └── blender_val.json
+├── convsent
+│   ├── trivia_qa_test.json
+│   └── trivia_qa_train.json
+└── wiki_recent
+    ├── recent_test.json
+    └── recent_train.json
+```
+
+</details>
+
+---
+
+**Datasets for Factual Knowledge**
 | **dataset** | Google Drive| BaiduNetDisk | Description |
 | :--------: | :-----------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------: | :--------------------------------------------------------------------------------: |
 | _ZsRE_ plus | [[Google Drive]](https://drive.google.com/file/d/1WRo2SqqgNtZF11Vq0sF5nL_-bHi18Wi4/view?usp=sharing) | [[BaiduNetDisk]](https://pan.baidu.com/s/1cQleUMsNjuDk4BKx2bZkag?pwd=xzky) | Question Answering dataset using question rephrasings |
 | _Counterfact_ plus | [[Google Drive]](https://drive.google.com/file/d/1WRo2SqqgNtZF11Vq0sF5nL_-bHi18Wi4/view?usp=sharing) | [[BaiduNetDisk]](https://pan.baidu.com/s/1cQleUMsNjuDk4BKx2bZkag?pwd=xzky) | Counterfact dataset using Entity replacement |
+
 
 We provide zsre and counterfact datasets to verify the effectiveness of knowledge editing. You can download them here. [[Google Drive]](https://drive.google.com/file/d/1WRo2SqqgNtZF11Vq0sF5nL_-bHi18Wi4/view?usp=sharing), [[BaiduNetDisk]](https://pan.baidu.com/s/1cQleUMsNjuDk4BKx2bZkag?pwd=xzky).
 
@@ -252,7 +367,7 @@ editing-data
 
 ---
 
-**Dataset for Multimodal**
+**Datasets for Multimodal Knowledge**
 | **dataset** | Google Drive| BaiduNetDisk | Description |
 | :--------: | :-----------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------: | :--------------------------------------------------------------------------------: |
 | E-IC | [[Google Drive]](https://drive.google.com/drive/folders/1jBdTJxUb9wEeHnvG-RY8dv5_I4QlDpUS?usp=drive_link) | [[BaiduNetDisk]](https://pan.baidu.com/s/1g9nMv-5BJmztxYU-BWRdvg?pwd=ik5c) | dataset for editing _Image Captioning_ |
@@ -291,21 +406,7 @@ editing-data
 |   _ROME_   |    Locate-Then-Edit Neurons    | [[Colab-gpt2]](https://colab.research.google.com/drive/1KkyWqyV3BjXCWfdrrgbR-QS3AAokVZbr?usp=sharing) | [[Colab-llama]](https://colab.research.google.com/drive/1W18GPlBCV9K6lDy7eX8V5W0knTLr5r0A) |
 |  _MEMIT_   |    Locate-Then-Edit Neurons    |       [[Colab-gpt2]](https://colab.research.google.com/drive/1P1lVklP8bTyh8uxxSuHnHwB91i-1LW6Z)       | [[Colab-llama]](https://colab.research.google.com/drive/19fKCKtVBU2fqj6eTvDokGoTrxvXkEPPq) |
 
-#### Editing Performance
 
-We present editing results of the four metrics on [LlaMA-2-7B](https://huggingface.co/meta-llama/Llama-2-7b-hf) using EasyEdit. We adopt [ZsRE](https://drive.google.com/file/d/1WRo2SqqgNtZF11Vq0sF5nL_-bHi18Wi4/view?usp=sharing) as the test dataset.
-
-> ❗️❗️Editing `llama-2-7B` requires 40G+ VRAM on GPU. (OOM [solution](https://github.com/zjunlp/EasyEdit/issues/9#issuecomment-1687284658))
-
-|       | Reliability | Generalization |  Locality  | Portability |
-| :---: | :---------: | :------------: | :--------: | :---------: |
-| FT  |    56.94    |     52.02      |   96.32    |    0.07     |
-| SERAC |    99.49    |     99.13      | **100.00** |    0.13     |
-|  IKE  | **100.00**  |   **99.98**    |   69.19    |  **67.56**  |
-| MEND  |    94.24    |     90.27      |   97.04    |    0.14     |
-|  KN   |    28.95    |     28.43      |   65.43    |    0.07     |
-| ROME  |    92.45    |     87.04      |   99.63    |    10.46    |
-| MEMIT |    92.94    |     85.97      |   99.49    |    6.03     |
 
 ## Requirements
 
@@ -351,15 +452,17 @@ docker run -p 8080:80 your-image-name
 #### Editing GPU memory usage
 Our results are all based on the default configuration
 
-|       | llama-2-7B | chatglm2 |  gpt-j-6b  | gpt-xl |
-| :---: | :---------: | :------------: | :--------: | :---------: |
-| FT    |    60GB    |     58GB      |    55GB      |    7GB        |
-| SERAC |    42GB    |     32GB      |    31GB      |    10GB       |
-|  IKE  |    52GB     |     38GB      |    38GB      |    10GB       |
-| MEND  |    46GB     |     37GB      |    37GB      |    13GB       |
-|  KN   |    42GB    |     39GB      |    40GB      |    12GB       |
-| ROME  |    31GB    |     29GB      |    27GB      |    10GB       |
-| MEMIT |    33GB    |     31GB      |    31GB      |    11GB       |
+|         | llama-2-7B | chatglm2 | gpt-j-6b | gpt-xl |
+|:-------:|:----------:|:--------:|:--------:|:------:|
+|   FT    |    60GB    |   58GB   |   55GB   |  7GB   |
+|  SERAC  |    42GB    |   32GB   |   31GB   |  10GB  |
+|   IKE   |    52GB    |   38GB   |   38GB   |  10GB  |
+|  MEND   |    46GB    |   37GB   |   37GB   |  13GB  |
+|   KN    |    42GB    |   39GB   |   40GB   |  12GB  |
+|  ROME   |    31GB    |   29GB   |   27GB   |  10GB  |
+|  MEMIT  |    33GB    |   31GB   |   31GB   |  11GB  |
+| AdaLoRA |    29GB    |   24GB   |   25GB   |  8GB   |
+|  GRACE  |    27GB    |          |   23GB   |  6GB   |
 <!-- editing multimodal -->
 ## 📌Use EasyEdit
 
@@ -630,6 +733,20 @@ trainer.run()
 
 - Due to different transformer versions and different GPU models, the editing results may fluctuate **slightly**.
 
+**M-Generality Results**
+
+
+
+|  *VQA*  | KE | IKE |  SERAC  | MEND |
+| :---: | :---------: | :------------: | :--------: | :---------: |
+| MiniGPT-4  |    88.60    |     99.95      |   88.10    |    99.60     |
+| BLIP2  |    74.60    |     99.79      |   99.20    |    99.40     |
+
+|  *Caption* | KE | IKE |  SERAC  | MEND |
+| :---: | :---------: | :------------: | :--------: | :---------: |
+| MiniGPT-4  |    13.60    |     91.00      |   91.47    |    93.35     |
+| BLIP2  |    1.60    |     96.55      |   99.72    |    93.48     |
+
 #### Introduction by a Simple Example
 
 With the modularity and flexibility of `EasyEdit`, you can easily use it to edit model.
@@ -815,13 +932,85 @@ Meanwhile, we will offer long-term maintenance to fix bugs, solve issues and mee
 
 </details>
 
+# Use EasyEdit with KnowEdit
+## Dataset
+
+KnowEdit is a benchmark dataset of knowledge editing for LLMs. You can easily obtain KnowEdit from HuggingFace, HuggingFace, and ModelScope.
+
+| **dataset** | HuggingFace| HuggingFace | ModelScope |
+| :--------: | :-----------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------: | :--------------------------------------------------------------------------------: |
+| KnowEdit | [[HuggingFace]](https://huggingface.co/datasets/zjunlp/KnowEdit) | [[WiseModel]](https://wisemodel.cn/datasets/zjunlp/KnowEdit) | [[ModelScope]](https://www.modelscope.cn/datasets/zjunlp/KnowEdit) |
+
+
+## Usage 
+
+We provide detailed scripts for user to easily use KnowEdit, please refer to [examples](https://github.com/zjunlp/EasyEdit/blob/main/examples/KnowEdit.md).
+
+# Editing Performance
+
+We present editing results of the four metrics on [LlaMA-2-7B](https://huggingface.co/meta-llama/Llama-2-7b-hf) using EasyEdit. We adopt [ZsRE](https://drive.google.com/file/d/1WRo2SqqgNtZF11Vq0sF5nL_-bHi18Wi4/view?usp=sharing) as the test dataset.
+
+> ❗️❗️Editing `llama-2-7B` requires 40G+ VRAM on GPU. (OOM [solution](https://github.com/zjunlp/EasyEdit/issues/9#issuecomment-1687284658))
+
+|       | Reliability | Generalization |  Locality  | Portability |
+| :---: | :---------: | :------------: | :--------: | :---------: |
+| FT  |    56.94    |     52.02      |   96.32    |    0.07     |
+| SERAC |    99.49    |     99.13      | **100.00** |    0.13     |
+|  IKE  | **100.00**  |   **99.98**    |   69.19    |  **67.56**  |
+| MEND  |    94.24    |     90.27      |   97.04    |    0.14     |
+|  KN   |    28.95    |     28.43      |   65.43    |    0.07     |
+| ROME  |    92.45    |     87.04      |   99.63    |    10.46    |
+| MEMIT |    92.94    |     85.97      |   99.49    |    6.03     |
+
+
+
+We also present editing results of KnowEdit on [LlaMA-2-7B](https://huggingface.co/meta-llama/Llama-2-7b-hf) using EasyEdit. 
+
+| DataSet                  | Metric        | SERAC  | ICE    | AdaLoRA | MEND   | ROME   | MEMIT  | FT-L   | FT     |
+|--------------------------|---------------|--------|--------|---------|--------|--------|--------|--------|--------|
+| **WikiData_recent**      |               |        |        |         |        |        |        |        |        |
+|                          | Edit Succ.  | 98.68  | 60.74  | 65.61   | 76.88  | 85.08  | 85.32  | 71.18  | 31.24  |
+|                          | Portability | 63.52  | 36.93  | 47.22   | 50.11  | 37.45  | 37.94  | 48.71  | 15.91  |
+|                          | Locality     | 100.00 | 33.34  | 55.78   | 92.87  | 66.2   | 64.78  | 63.7   | 3.65   |
+|                          | Fluency     | 553.19 | 531.01 | 537.51  | 586.34 | 574.28 | 566.66 | 549.35 | 428.67 |
+| **ZsRE**                 |               |        |        |         |        |        |        |        |        |
+|                          | Edit Succ.  | 99.67  | 66.01  | 69.86   | 96.74  | 96.57  | 83.07  | 54.65  | 36.88  |
+|                          | Portability | 56.48  | 63.94  | 52.95   | 60.41  | 52.20  | 51.43  | 45.02  | 8.72   |
+|                          | Locality   | 30.23  | 23.14  | 72.21   | 92.79  | 27.14  | 25.46  | 71.12  | 0.31   |
+|                          | Fluency     | 410.89 | 541.14 | 532.82  | 524.33 | 570.47 | 559.72 | 474.18 | 471.29 |
+| **WikiBio**              |               |        |        |         |        |        |        |        |        |
+|                          | Edit Succ.  | 99.69  | 95.53  | 97.02   | 93.66  | 95.05  | 94.29  | 66.27  | 95.64  |
+|                          | Locality    | 69.79  | 47.90  | 57.87   | 69.51  | 46.96  | 51.56  | 60.14  | 13.38  |
+|                          | Fluency    | 606.95 | 632.92 | 615.86  | 609.39 | 617.25 | 616.65 | 604.00 | 589.22 |
+| **WikiData_counterfact** |               |        |        |         |        |        |        |        |        |
+|                          | Edit Succ.  | 99.99  | 69.83  | 72.14   | 78.82  | 83.21  | 83.41  | 51.12  | 26.78  |
+|                          | Portability | 76.07  | 45.32  | 55.17   | 57.53  | 38.69  | 40.09  | 39.07  | 16.94  |
+|                          | Locality    | 98.96  | 32.38  | 66.78   | 94.16  | 65.4   | 63.68  | 62.51  | 0.29   |
+|                          | Fluency     | 549.91 | 547.22 | 553.85  | 588.94 | 578.84 | 568.58 | 544.80 | 483.71 |
+| **ConvSent**             |               |        |        |         |        |        |        |        |        |
+|                          | Edit Succ.  | 62.75  | 52.78  | 44.89   | 50.76  | 45.79  | 44.75  | 49.50  | 61.93  |
+|                          | Locality    | 0.26   | 49.73  | 0.18    | 3.42   | 0.00   | 0.00   | 0.00   | 0.00   |
+|                          | Fluency     | 458.21 | 621.45 | 606.42  | 379.43 | 606.32 | 602.62 | 607.86 | 546.24 |
+| **Sanitation**           |               |        |        |         |        |        |        |        |        |
+|                          | Edit Succ.  | 0.00   | 72.50  | 2.50    | 0.00   | 85.00  | 48.75  | 0.00   | 60.00  |
+|                          | Locality    | 100.00 | 56.58  | 65.50   | 5.29   | 50.31  | 67.47  | 14.78  | 42.61  |
+|                          | Fluency     | 416.29 | 794.15 | 330.44  | 407.18 | 465.12 | 466.10 | 439.10 | 351.39 |
+
 ## Citation
 
 Please cite our paper if you use EasyEdit in your work.
 
 ```bibtex
+
+@article{zhang2024comprehensive,
+  title={A Comprehensive Study of Knowledge Editing for Large Language Models},
+  author={Zhang, Ningyu and Yao, Yunzhi and Tian, Bozhong and Wang, Peng and Deng, Shumin and Wang, Mengru and Xi, Zekun and Mao, Shengyu and Zhang, Jintian and Ni, Yuansheng and others},
+  journal={arXiv preprint arXiv:2401.01286},
+  year={2024}
+}
+
 @article{wang2023easyedit,
-  title={EasyEdit: An Easy-to-use Knowledge Editing Framework for Large Language Models},
+  title={Easyedit: An easy-to-use knowledge editing framework for large language models},
   author={Wang, Peng and Zhang, Ningyu and Xie, Xin and Yao, Yunzhi and Tian, Bozhong and Wang, Mengru and Xi, Zekun and Cheng, Siyuan and Liu, Kangwei and Zheng, Guozhou and others},
   journal={arXiv preprint arXiv:2308.07269},
   year={2023}
@@ -838,6 +1027,13 @@ Please cite our paper if you use EasyEdit in your work.
   title={Can We Edit Multimodal Large Language Models?}, 
   author={Cheng, Siyuan and Tian, Bozhong and Liu, Qingbin and Chen, Xi and Wang, Yongheng and Chen, Huajun and Zhang, Ningyu},
   journal={arXiv preprint arXiv:2310.08475},
+  year={2023}
+}
+
+@article{mao2023editing,
+  title={Editing personality for llms},
+  author={Mao, Shengyu and Zhang, Ningyu and Wang, Xiaohan and Wang, Mengru and Yao, Yunzhi and Jiang, Yong and Xie, Pengjun and Huang, Fei and Chen, Huajun},
+  journal={arXiv preprint arXiv:2310.02168},
   year={2023}
 }
 
