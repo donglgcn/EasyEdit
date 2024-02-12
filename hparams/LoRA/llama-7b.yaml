@@ -1,7 +1,8 @@
 alg_name: "LoRA"
-model_name: "./hugging_cache/llama-2-7b"
+model_name: "/newdisk3/yunzhi/llama-2-7b"
 device: 1
 
+lora_type: "adalora"
 layers: []
 num_steps: 70
 batch_size: 1
@@ -14,3 +15,4 @@ lora_alpha: 32
 lora_dropout: 0.1
 norm_constraint: false
 target_modules: ["q_proj", "v_proj"]  #["up_proj", "down_proj"] #["q_proj", "v_proj"]
+model_parallel: true
