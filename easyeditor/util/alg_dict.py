@@ -10,7 +10,7 @@ from ..models.ft_api import FTApiHyperParams, apply_ft_api_to_model
 from ..models.lora import LoRAHyperParams, apply_lora_to_model
 from ..models.grace import GraceHyperParams, apply_grace_to_model
 from ..models.pmet import PMETHyperParams, apply_pmet_to_model
-from ..models.melo import MELOHyperParams, apply_melo_to_model
+# from ..models.melo import MELOHyperParams, apply_melo_to_model
 
 ALG_DICT = {
     'ROME': apply_rome_to_model,
@@ -24,7 +24,7 @@ ALG_DICT = {
     'LoRA': apply_lora_to_model,
     'GRACE': apply_grace_to_model,
     'PMET': apply_pmet_to_model,
-    'MELO': apply_melo_to_model
+    # 'MELO': apply_melo_to_model
 }
 
 ALG_MULTIMODAL_DICT = {

@@ -3,7 +3,7 @@ from easyeditor import BaseEditor
 from easyeditor import KNHyperParams, FTHyperParams, KETrainingHparams,\
     ROMEHyperParams, MEMITHyperParams, MENDTrainingHparams, MENDHyperParams, \
     SERACTrainingHparams, SERACHparams, IKEHyperParams, FTApiHyperParams, LoRAHyperParams, \
-    GraceHyperParams, PMETHyperParams,MELOHyperParams
+    GraceHyperParams, PMETHyperParams # ,MELOHyperParams
 from easyeditor import ZsreDataset, CounterFactDataset
 from easyeditor import EditTrainer
 from easyeditor.models.ike import encode_ike_facts
@@ -2643,8 +2643,8 @@ def main():
     # test_MEMIT_Qwen()
     # test_MEND_Train_Qwen()
     # test_MEND_Qwen()
-    # test_GRACE_GPT2()
-    test_PMET()
+    test_GRACE_GPT2()
+    # test_PMET()
     # test_FT_Mistral()
     # test_IKE_Mistral()
     # test_KN_Mistral()
