@@ -1,3 +1,4 @@
+from easyeditor.evaluate.evaluate import compute_multimodal_edit_locality_label_quality
 from ..dataset.processor.blip_processors import BlipImageEvalProcessor
 from .editor import BaseEditor
 import os.path
@@ -584,11 +585,15 @@ class MultimodalEditor:
                     'case_id': i,
                     # "requested_rewrite": request,
                     "time": exec_time,
-                    "post": post
+                    "post": post,
+                    "image_locality_acc": compute_multimodal_edit_locality_label_quality(edited_model, self.hparams, self.tok, request
+                                                        , self.hparams.device)
                 }
                 if self.alg_name == 'KN':
                     with torch.no_grad():
                         weights_copy() # unpatch_fn
+                elif self.alg_name == 'MMGRACE':
+                    self.model = edited_model.reset_layers().model
                 else:
                     with torch.no_grad():
                         for k, v in weights_copy.items():

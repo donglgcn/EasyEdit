@@ -58,29 +58,57 @@ def get_shape(p, model):
 def get_logits(x):
     return x.logits if hasattr(x, "logits") else x
 
-def tokenize(batch, tokenizer, device, test=False):
-    prompt, label = batch["prompt"], batch["target_new"]
-    if not isinstance(prompt, list):
-        prompt=[prompt]
-    if not isinstance(label, list):
-        label=[label]
-    mask_token = -100 # ignore_index of CrossEntropyLoss
-    if test or not label:
-        tokens = tokenizer(list(prompt), return_tensors="pt", padding=True, truncation=True)
-        tokens["labels"] = tokens["input_ids"].clone()
-        tokens["labels"][tokens["input_ids"] == tokenizer.pad_token_id] = mask_token
-
-    else:
-        full_prompt = [f"{p} {l} <|endoftext|>" for p, l in zip(prompt, label)]
-        prompt_ids = tokenizer(list(prompt), return_tensors="pt", padding=True, truncation=True)["input_ids"]
-        num_prompt_toks = [int((i != tokenizer.pad_token_id).sum()) for i in prompt_ids]
-        tokens = tokenizer(full_prompt, return_tensors="pt", padding=True, truncation=True)
-        tokens["labels"] = tokens["input_ids"].clone()
-        for i in range(len(prompt)):
-            tokens["labels"][i][:num_prompt_toks[i]] = mask_token
-
-        tokens["labels"][tokens["input_ids"] == tokenizer.pad_token_id] = mask_token
+def tokenize(requests, tokenizer, device, hparams, test=False):
+    if not isinstance(requests, list):
+        requests = [requests]
+    src = [request["prompt"] for request in requests]
+    trg = [request["target"] for request in requests]
+    # trg = [
+    #         (" " if request["target"][0] != " " else "")
+    #         + request["target"]
+    #         for request in requests
+    #     ]
+    image = [request["image"] for request in requests]
+    image = torch.stack(image, dim=0).to(device)
+    text_input = [s + " "+ t for s, t in zip(src, trg)]
     
-    tokens = {f"{k1}" : v1.to(device) for k1, v1 in tokens.items()}
+    if hparams.model_name == "minigpt4":
+        prompts_len = [len(tokenizer.encode(s, add_special_tokens=False)) for s in src]
+        labels = tokenizer(trg, add_special_tokens=False, return_tensors="pt",)["input_ids"].to(device)
+    else:
+        prompts_len = [len(tokenizer.encode(s)) for s in src]
+        labels = tokenizer(trg, return_tensors="pt",)["input_ids"].to(device)
+
+    # Run MEND
+    tokens = dict(
+        image=image,
+        text_input=text_input,
+        labels=labels,
+        prompts_len=prompts_len
+    )
+    
+    # prompt, label = batch["prompt"], batch["target_new"]
+    # if not isinstance(prompt, list):
+    #     prompt=[prompt]
+    # if not isinstance(label, list):
+    #     label=[label]
+    # mask_token = -100 # ignore_index of CrossEntropyLoss
+    # if test or not label:
+    #     tokens = tokenizer(list(prompt), return_tensors="pt", padding=True, truncation=True)
+    #     tokens["labels"] = tokens["input_ids"].clone()
+    #     tokens["labels"][tokens["input_ids"] == tokenizer.pad_token_id] = mask_token
+
+    # else:
+    #     full_prompt = [f"{p} {l}" for p, l in zip(prompt, label)]
+    #     prompt_ids = tokenizer(list(prompt), return_tensors="pt", padding=True, truncation=True)["input_ids"]
+    #     num_prompt_toks = [int((i != tokenizer.pad_token_id).sum()) for i in prompt_ids]
+    #     tokens = tokenizer(full_prompt, return_tensors="pt", padding=True, truncation=True)
+    #     tokens["labels"] = tokens["input_ids"].clone()
+    #     for i in range(len(prompt)):
+    #         tokens["labels"][i][:num_prompt_toks[i]] = mask_token
+
+    #     tokens["labels"][tokens["input_ids"] == tokenizer.pad_token_id] = mask_token
+    
+    # tokens = {f"{k1}" : v1.to(device) for k1, v1 in tokens.items()}
     return tokens
 

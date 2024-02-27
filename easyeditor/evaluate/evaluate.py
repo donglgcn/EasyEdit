@@ -106,7 +106,7 @@ def compute_rewrite_or_rephrase_quality(
         ret = {
             f"{key}_ppl": ppl
         }
-    elif hparams.alg_name=="GRACE":
+    elif hparams.alg_name=="GRACE" or hparams.alg_name=="MMGRACE":
         if 't5' in model_name.lower():
             acc = test_seq2seq_batch_prediction_acc(model, tok, hparams, prompt, target_new, device)
         else:
@@ -550,6 +550,38 @@ def compute_multimodal_edit_quality_demo(model, batch):
     
     return acc, pred_ids.numpy(), logits_
 
+def compute_multimodal_edit_locality_label_quality(model_post, hparams, tok, record: typing.Dict, device):
+    if "multimodal_locality_image" in record.keys():
+        m_loc_image = record["multimodal_locality_image"] if record["multimodal_locality_image"].is_cuda else record["multimodal_locality_image"].to(hparams.device)
+        m_loc_q = record["multimodal_locality_prompt"]
+        m_loc_a = record["multimodal_locality_ground_truth"]
+    sample = prepare_multimodal_edit(hparams, tok, m_loc_a, m_loc_q, m_loc_image)
+    with torch.no_grad():
+        model_pre = model_post.reset_layers()
+        base_image_outputs = model_pre(sample)
+        if not isinstance(base_image_outputs, torch.Tensor):
+            base_image_logits = base_image_outputs.logits
+        else:
+            base_image_logits = base_image_outputs
+        model_post = model_pre.resume_layers()
+        post_image_base_outputs = model_post(sample)
+        # print("post_local_batch_labels: ", post_local_batch_labels)
+        if not isinstance(post_image_base_outputs, torch.Tensor):
+            post_image_base_logits = post_image_base_outputs.logits
+        else:
+            post_image_base_logits = post_image_base_outputs
+    base_image_outputs_len = (base_image_outputs.labels == -100).sum(dim=-1)-1 # index starts from 0
+    post_image_base_outputs_len = (post_image_base_outputs.labels == -100).sum(dim=-1)-1
+    # print("m_loc_a: ", samples_pre['labels'])
+    # print("base_image_outputs.labels: ", base_image_outputs.labels)
+    truncated_base_image_logits = base_image_logits[:, base_image_outputs_len[0]:]
+    truncated_post_image_base_logits = post_image_base_logits[:, post_image_base_outputs_len[0]:]  
+    post_image_base_logits_softmax_top_k = torch.topk(torch.nn.functional.softmax(truncated_post_image_base_logits, dim=-1), k=10, dim=-1).indices
+    base_image_logits_softmax_top_k = torch.topk(torch.nn.functional.softmax(truncated_base_image_logits, dim=-1), k=10, dim=-1).indices
+    image_loc_acc = sum(post_image_base_logits_softmax_top_k.view(-1) == base_image_logits_softmax_top_k.view(-1))/post_image_base_logits_softmax_top_k.view(-1).shape[0]
+    print("image_loc_acc: ", image_loc_acc)
+    return image_loc_acc
+
 def compute_multimodal_edit_results(
     model,
     model_name,
@@ -626,76 +658,76 @@ def compute_multimodal_edit_results_demo(
     :param vec: ???
     :return: Dictionary containing rewriting metrics
     """
-    ret = {}
+
+    vis_root = hparams.coco_image
+    rephrase_root = hparams.rephrase_image
     # First, unpack rewrite evaluation record.
-    
     target = record["target"]
-    rewrite_prompts = record["prompt"]
-    image = record["image"]
-    
-    edit_inner = prepare_multimodal_edit(hparams, tok, target, rewrite_prompts, image)
-    ret['rewrite_acc'], _, logits = compute_multimodal_edit_quality_demo(model, edit_inner)
-    
-    if "rephrase_prompt" in record.keys():
-        rephrase_prompts = record["rephrase_prompt"]
-        edit_outer = prepare_multimodal_edit(hparams, tok, target, rephrase_prompts, image)
-        ret['rephrase_acc'], _ = compute_multimodal_edit_quality(model, edit_outer)
+    prompt = record["prompt"]
+    image = record["image"] if record["image"].is_cuda else record["image"].to(hparams.device)
+    # add repharses and image rephrases for okvqa datasets
+    rephrases = record["rephrase_prompts"] if 'rephrase_prompts' in record.keys() else None
+    rephrase_images = record["image_rephrases"] if 'image_rephrases' in record.keys() else None
+    rephrase = record["rephrase_prompt"] if 'rephrase_prompt' in record.keys() else None
+    rephrase_image = record["image_rephrase"] if 'image_rephrase' in record.keys() else None
+    if rephrase_image is not None:
+        rephrase_image = rephrase_image if rephrase_image.is_cuda else rephrase_image.to(hparams.device)
+    if rephrase_images is not None:
+        rephrase_images = rephrase_images if rephrase_images.is_cuda else rephrase_images.to(hparams.device)
         
+    if "locality_prompt" in record.keys():
+        loc_q = record["locality_prompt"]
+        loc_a = record["locality_ground_truth"]
+    if "multimodal_locality_image" in record.keys():
+        m_loc_image = record["multimodal_locality_image"] if record["multimodal_locality_image"].is_cuda else record["multimodal_locality_image"].to(hparams.device)
+        m_loc_q = record["multimodal_locality_prompt"]
+        m_loc_a = record["multimodal_locality_ground_truth"]
+
+    edit_inner = prepare_multimodal_edit(hparams, tok, target, prompt, image)
+    edit_acc, _, logits = compute_multimodal_edit_quality_demo(model, edit_inner)
+    ret = {
+        f"rewrite_acc": edit_acc
+    }
+    if rephrase is not None:
+        edit_outer = prepare_multimodal_edit(hparams, tok, target, rephrase, image)
+        rephrase_acc, _, logits = compute_multimodal_edit_quality_demo(model, edit_outer)
+        ret['rephrase_acc'] = rephrase_acc
+    
+    if rephrases is not None:
+        T_Generaltiy_Acc = []
+        for rephrased_text in rephrases:
+            edit_outer = prepare_multimodal_edit(hparams, tok, target, rephrased_text, image)
+            rephrase_acc, _, logits = compute_multimodal_edit_quality_demo(model, edit_outer)
+            T_Generaltiy_Acc.append(rephrase_acc)
+        ret['rephrase_acc'] = sum(T_Generaltiy_Acc) / len(T_Generaltiy_Acc)
+
     if "image_rephrase" in record.keys():
-        rephrase_image = record["image_rephrase"]
-        edit_image_outer = prepare_multimodal_edit(hparams, tok, target, rewrite_prompts, rephrase_image) 
-        ret['image_rephrase_acc'], _ = compute_multimodal_edit_quality(model, edit_image_outer)
-
-    if 'locality_prompt' in record.keys():
-        locality_prompt = record["locality_prompt"]
-        locality_ground_truth = record["locality_ground_truth"]
-        locality = prepare_multimodal_edit(hparams, tok, locality_ground_truth, locality_prompt, None)
-        _, ret['locality_output'] = compute_multimodal_edit_quality(model, locality)
+        edit_outer_image = prepare_multimodal_edit(hparams, tok, target, prompt, rephrase_image)
+        rephrase_image_acc, _, logits = compute_multimodal_edit_quality_demo(model, edit_outer_image)
+        ret['rephrase_image_acc'] = rephrase_image_acc
+    
+    if "image_rephrases" in record.keys():
+        I_Generaltiy_Acc = []
+        for rephrased_image in rephrase_images:
+            edit_outer_image = prepare_multimodal_edit(hparams, tok, target, prompt, rephrased_image)
+            rephrase_image_acc, _, logits = compute_multimodal_edit_quality_demo(model, edit_outer_image)
+            I_Generaltiy_Acc.append(rephrase_image_acc)
+        ret['rephrase_image_acc'] = sum(I_Generaltiy_Acc) / len(I_Generaltiy_Acc)
+    
+    if "locality_prompt" in record.keys():
+        locality = prepare_multimodal_edit(hparams, tok, loc_a, loc_q, None)
+        locality_acc, _ = compute_multimodal_edit_quality(model, locality)
+        ret['locality_acc'] = locality_acc
+    
+    if "multimodal_locality_image" in record.keys():
+        # we should not know the answer of the locality question.
+        locality_image = prepare_multimodal_edit(hparams, tok, m_loc_a, m_loc_q, m_loc_image)
+        locality_image_acc, _ = compute_multimodal_edit_quality(model, locality_image)
         
-    if 'multimodal_locality_prompt' in record.keys():
-        m_loc_prompt = record["multimodal_locality_prompt"]
-        m_loc_ground_truth = record["multimodal_locality_ground_truth"]
-        m_loc_image = record["multimodal_locality_image"]
-        m_locality = prepare_multimodal_edit(hparams, tok, m_loc_ground_truth, m_loc_prompt, m_loc_image)
-        _, ret['multimodal_locality_output'] = compute_multimodal_edit_quality(model, m_locality)
-    # Form a list of lists of prefixes to test.
-
+        ret['locality_image_acc'] = locality_image_acc
+        
     return ret, logits
 
-
-    prompt_tok = tok(
-        prompt,
-        padding=True,
-        truncation=True,
-        max_length=hparams.max_length,
-        return_tensors="pt",
-    ).to(f"cuda:{device}")
-
-    trg_tok = tok(
-        target,
-        padding=True,
-        truncation=True,
-        max_length=hparams.max_length,
-        return_tensors="pt",
-    ).to(f"cuda:{device}")
-
-    prompt_tok['labels'] = trg_tok['input_ids']
-    # prompt_tok['decoder_attention_mask'] = trg_tok['attention_mask']
-
-
-    with torch.no_grad():
-        outputs = model(**prompt_tok)
-        if type(outputs) is torch.Tensor:
-            logits = outputs
-        else:
-            logits = outputs.logits
-
-        assert logits.size(1) == trg_tok['input_ids'].size(1)
-        ans = torch.argmax(logits, dim=-1)
-        if locality:
-            return ans.squeeze().detach().cpu().numpy().tolist()
-
-        return torch.mean((trg_tok['input_ids'][:,:-1] == ans[:,:-1]).float(), dim=-1).detach().cpu().numpy().tolist()[0]
 
 def compute_sent_metric(
     model,

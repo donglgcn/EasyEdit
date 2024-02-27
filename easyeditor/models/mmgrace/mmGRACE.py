@@ -1,4 +1,6 @@
 import torch
+
+from easyeditor.trainer.losses import masked_log_probs
 from .utils import parent_module, brackets_to_periods
 import transformers
 import os
@@ -46,31 +48,56 @@ class MMGRACE(torch.nn.Module):
         edit_modules = [parent_module(self.model, brackets_to_periods(layer)) for layer in self.layers]
         layer_names = [layer.rsplit(".", 1)[-1] for layer in self.layers]
         original_layers = [getattr(edit_module, layer_name) for edit_module, layer_name in zip(edit_modules, layer_names)]
+        self.original_layers = original_layers
         # careful, the edit module may be the same module for different editing layers.
         for edit_module, layer_name, original_layer in zip(edit_modules, layer_names, original_layers):
-            setattr(edit_module, layer_name, GRACEAdapter(config, original_layer, transpose=transpose).to(self.device))
+            setattr(edit_module, layer_name, MMGRACEAdapter(config, original_layer, transpose=transpose).to(self.device))
         
-    def __call__(self, **kwargs):
+    def reset_layers(self):
+        edit_modules = [parent_module(self.model, brackets_to_periods(layer)) for layer in self.layers]
+        layer_names = [layer.rsplit(".", 1)[-1] for layer in self.layers]
+        self.mmgrace_layers = [getattr(edit_module, layer_name) for edit_module, layer_name in zip(edit_modules, layer_names)]
+        for edit_module, layer_name, original_layer in zip(edit_modules, layer_names, self.original_layers):
+            setattr(edit_module, layer_name, original_layer.to(self.device))
+        return self
+        
+    def resume_layers(self):
+        edit_modules = [parent_module(self.model, brackets_to_periods(layer)) for layer in self.layers]
+        layer_names = [layer.rsplit(".", 1)[-1] for layer in self.layers]
+        self.original_layers = [getattr(edit_module, layer_name) for edit_module, layer_name in zip(edit_modules, layer_names)]
+        for edit_module, layer_name, mmgrace_layer in zip(edit_modules, layer_names, self.mmgrace_layers):
+            setattr(edit_module, layer_name, mmgrace_layer.to(self.device))
+        return self
+    
+    def __call__(self, token):
         # if self.config.task == "hallucination":
         #     print(kwargs)
         #     key_id = (kwargs["labels"] == -100).sum() - 1
         #     setattr(eval(f"self.model.{self.layer}"), "key_id", key_id) # Tell GRACE which token to use for its query (default is the last token)
-        return self.model(**kwargs)
+        return self.model(token)
     
-    def generate(self, *args, **kwargs):
-        return self.model.generate(*args, **kwargs)
+    # def generate(self, *args, **kwargs):
+    #     return self.model.generate(*args, **kwargs)
         
     def edit(self, config, tokens):
         for layer in self.layers:
             self.layer = layer
+            for l in self.layers:
+                # set a lock, one layer is training then other should be fixed.
+                setattr(eval(f"self.model.{l}"), "other_is_training", True)
             self.edit_layer(config, tokens)
+        # recover all the layers, set other is training to False
+        for layer in self.layers:
+            setattr(eval(f"self.model.{layer}"), "other_is_training", False)
     
     def edit_layer(self, config, tokens):
-        key_id = (tokens["labels"] == -100).sum() - 1
+        # key_id = (tokens["labels"] == -100).sum() - 1
+        key_id = len(tokens["labels"][0])
         setattr(eval(f"self.model.{self.layer}"), "key_id", key_id)
         
         # --- pass edit label, training mode, and key_id into GRACE ---
         setattr(eval(f"self.model.{self.layer}"), "training", True)
+        setattr(eval(f"self.model.{self.layer}"), "other_is_training", False) # Issue, two layers would cause one layer fail
         setattr(eval(f"self.model.{self.layer}"), "edit_label", tokens["labels"])
                 
         self.losses = []
@@ -80,11 +107,17 @@ class MMGRACE(torch.nn.Module):
             setattr(eval(f"self.model.{self.layer}"), "iter", i)
             
             # --- pass tokens through model (including through the GRACE layer) ---
-            outputs = self.model(**tokens)
+            outputs = self.model(tokens)
             if i == 0:
                 # --- we only need to create an optimizer for the first iteration (but forward pass instantiates the key, so optimzer is passed after first inference) ---
                 optimizer = torch.optim.Adam(self.model.parameters(), config.edit_lr)
+            # if 'minigpt4' in config.model_name.lower() or 'blip' in self.config.model_name.lower():
+            #     if not isinstance(outputs, torch.Tensor):
+            #         # batch_labels = outputs.labels
+            #         logits = outputs.logits
+            #     loss = masked_log_probs(config, pred = logits, targ=tokens["labels"], shift=True)["nll"]
             loss = outputs.loss
+            # print("mend loss:" ,loss, "loss:", outputs.loss)
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
@@ -100,9 +133,9 @@ class MMGRACE(torch.nn.Module):
         self.log_dict["chosen_key"] =  chosen_key
         self.log_dict["nkeys"] = nkeys
 
-class GRACEAdapter(torch.nn.Module):
+class MMGRACEAdapter(torch.nn.Module):
     def __init__(self, config, layer, transpose):
-        super(GRACEAdapter, self).__init__()
+        super(MMGRACEAdapter, self).__init__()
 
         self.layer = layer
         self.weight = self.layer.weight
@@ -121,6 +154,7 @@ class GRACEAdapter(torch.nn.Module):
             self.key_shape = layer.weight.shape[0]
             self.value_shape = layer.weight.shape[1]
         self.training = False
+        # self.other_is_training=False
 
     def add_key(self, new_key, new_value):
         keys = torch.vstack([self.keys, new_key.detach()]) # Add new key to list of keys
@@ -151,13 +185,17 @@ class GRACEAdapter(torch.nn.Module):
         # Run layer forward and save what it would have returned for this instance
         layer_out = self.layer(*args)
 
+        ### If some other layer is training, so directly return the layer_out, do not overwrite their values
+        if self.other_is_training:
+            return layer_out
+
         ### If training, we need to modify the codebook
         if (not self.training) & ('keys' not in self.__dict__):
             # If it's not training time and we haven't added any keys yet (this is before doing any editing)
             # print(self.__dict__)
             return layer_out
         else:
-            token_to_edit = min(self.key_id, args[0].shape[1]-1) # args[0].shape[1] - 1 is sequence length
+            token_to_edit = -self.key_id-1 # min(args[0].shape[1]-self.key_id -1, args[0].shape[1]-1) # args[0].shape[1] - 1 is sequence length
             query = args[0][:, token_to_edit, :] # Just use activation for last token
             if self.config.val_init == "cold":
                 new_value = torch.nn.Parameter(torch.rand(1, self.value_shape, requires_grad=True, device=self.device))
@@ -198,6 +236,7 @@ class GRACEAdapter(torch.nn.Module):
         # print(token_to_edit)
         # compute distance from query to all keys and find the closest keys
         dists = torch.cdist(self.keys, query, p=2).view(-1, len(query))
+        # print(dists)
         smallest_dist, self.chosen_key = dists.min(0)
         smallest_dist = smallest_dist.view(-1, 1)
         chosen_value = self.values[self.chosen_key]
@@ -215,3 +254,4 @@ class GRACEAdapter(torch.nn.Module):
         else:
             print("token replacement choice not found")
         return layer_out
+
