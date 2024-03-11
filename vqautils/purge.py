@@ -7,7 +7,7 @@ from tqdm import tqdm
 def clean_rephrased_questions(data):
     for item in data['rephrased_questions']:
         # Filter out empty strings from the rephrased questions
-        item['rephrased_questions'] = [q for q in item['rephrased_questions'] if q not in ['', ' ', None]]
+        item['rephrased_questions'] = [q for q in item['rephrased_questions'] if q not in ['', ' ', '  ', '   ', None]]
         if len(item['rephrased_questions']) != 10:
             print(f"Question ID: {item['question_id']}")
             print(f"Question: {item['question']}")
@@ -29,10 +29,18 @@ def save_rephrased_questions(data, output_file):
 def purge_rephrased_questions(input_file, output_file):
     data = load_rephrased_questions(input_file)
     data = clean_rephrased_questions(data)
-    original_data = load_rephrased_questions('OpenEnded_mscoco_val2014_questions.json')
+    original_data = load_rephrased_questions('vqautils/OpenEnded_mscoco_train2014_questions.json')
     original_data['questions'] = data['rephrased_questions']
     save_rephrased_questions(original_data, output_file)
 
+def purge_rephrased_questions_train(input_file, output_file):
+    data = load_rephrased_questions(input_file)
+    data = clean_rephrased_questions(data)
+    original_data = load_rephrased_questions('vqautils/OpenEnded_mscoco_val2014_questions.json')
+    for i in range(len(original_data['questions'])):
+        original_data['questions'][i]['rephrased_questions_train'] = data['rephrased_questions'][i]['rephrased_questions']
+    # original_data['questions'] = data['rephrased_questions']
+    save_rephrased_questions(original_data, output_file)
 """
 loading VQA annotations and questions into memory...
 creating index...
@@ -71,10 +79,10 @@ def merge_image_object_json(image_object, original_data):
     with open(original_data, 'r') as file:
         data2 = json.load(file)
     index = 0
-    data2['annotations'] = data1['pred_locality_image_object']
+    data2['annotations'] = data1['pred_locality_answer_4_train']
     
     #f dump
-    with open('./vqautils/output.json', 'w') as outfile:
+    with open('./vqautils/output_val2014.json', 'w') as outfile:
         json.dump(data2, outfile, indent=4)
     return data1
 
@@ -176,6 +184,7 @@ def purge_locality_answer(locality_file):
 if __name__ == '__main__':
     # compare_jsons('vqautils/counterfact_type_new.json', 'vqautils/counterfact_type.json', 'vqautils/counterfact_type_previous.json')
     # rename_folder()
-    # purge_rephrased_questions('rephrased_questions.json', 'rephrased_questions_purged.json')
+    # purge_rephrased_questions('rephrased_questions_train2014.json', 'rephrased_questions_purged.json')
+    # purge_rephrased_questions_train('rephrased_questions_4train.json', 'rephrased_questions_val2014_purged.json')
     # purge_locality_answer('./locality_answer.json')
-    merge_image_object_json('./pred_locality_image_object.json', './vqautils/mscoco_val2014_annotations.json')
+    merge_image_object_json('./pred_locality_answer_4_train.json', './vqautils/mscoco_val2014_annotations.json')

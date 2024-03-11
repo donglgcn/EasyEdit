@@ -10,7 +10,8 @@ from ..models.ft_api import FTApiHyperParams, apply_ft_api_to_model
 from ..models.lora import LoRAHyperParams, apply_lora_to_model
 from ..models.grace import GraceHyperParams, apply_grace_to_model
 from ..models.pmet import PMETHyperParams, apply_pmet_to_model
-from ..models.mmgrace import MMGraceHyperParams, apply_mmgrace_to_model
+from ..models.mmgrace import MMGraceMultimodalHyperParams, apply_mmgrace_to_model
+from ..models.BalancEdit import BalancEditMultimodalHyperParams, apply_BalancEdit_to_model
 # from ..models.melo import MELOHyperParams, apply_melo_to_model
 
 ALG_DICT = {
@@ -26,6 +27,7 @@ ALG_DICT = {
     'GRACE': apply_grace_to_model,
     'MMGRACE': apply_mmgrace_to_model,
     'PMET': apply_pmet_to_model,
+    'BalancEdit': apply_BalancEdit_to_model,
     # 'MELO': apply_melo_to_model
 }
 
@@ -35,6 +37,7 @@ ALG_MULTIMODAL_DICT = {
     'SERAC_MULTI': SeracMultimodalRewriteExecutor().apply_to_model,
     'IKE': apply_ike_to_multimodal_model,
     'MMGRACE': apply_mmgrace_to_model,
+    'BalancEdit': apply_BalancEdit_to_model,
 }
 
 DS_DICT = {

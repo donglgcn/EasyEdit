@@ -684,17 +684,20 @@ def compute_multimodal_edit_results_demo(
         m_loc_a = record["multimodal_locality_ground_truth"]
 
     edit_inner = prepare_multimodal_edit(hparams, tok, target, prompt, image)
+    print("edit_inner: \n")
     edit_acc, _, logits = compute_multimodal_edit_quality_demo(model, edit_inner)
     ret = {
         f"rewrite_acc": edit_acc
     }
     if rephrase is not None:
         edit_outer = prepare_multimodal_edit(hparams, tok, target, rephrase, image)
+        print("edit_outer: \n")
         rephrase_acc, _, logits = compute_multimodal_edit_quality_demo(model, edit_outer)
         ret['rephrase_acc'] = rephrase_acc
     
     if rephrases is not None:
         T_Generaltiy_Acc = []
+        print("T_Generaltiy_Acc: \n", rephrases)
         for rephrased_text in rephrases:
             edit_outer = prepare_multimodal_edit(hparams, tok, target, rephrased_text, image)
             rephrase_acc, _, logits = compute_multimodal_edit_quality_demo(model, edit_outer)
@@ -702,12 +705,14 @@ def compute_multimodal_edit_results_demo(
         ret['rephrase_acc'] = sum(T_Generaltiy_Acc) / len(T_Generaltiy_Acc)
 
     if "image_rephrase" in record.keys():
+        print("image_rephrase: \n")
         edit_outer_image = prepare_multimodal_edit(hparams, tok, target, prompt, rephrase_image)
         rephrase_image_acc, _, logits = compute_multimodal_edit_quality_demo(model, edit_outer_image)
         ret['rephrase_image_acc'] = rephrase_image_acc
     
     if "image_rephrases" in record.keys():
         I_Generaltiy_Acc = []
+        print("image_rephrases: \n")
         for rephrased_image in rephrase_images:
             edit_outer_image = prepare_multimodal_edit(hparams, tok, target, prompt, rephrased_image)
             rephrase_image_acc, _, logits = compute_multimodal_edit_quality_demo(model, edit_outer_image)
@@ -715,11 +720,13 @@ def compute_multimodal_edit_results_demo(
         ret['rephrase_image_acc'] = sum(I_Generaltiy_Acc) / len(I_Generaltiy_Acc)
     
     if "locality_prompt" in record.keys():
+        print("locality_prompt: \n")
         locality = prepare_multimodal_edit(hparams, tok, loc_a, loc_q, None)
         locality_acc, _ = compute_multimodal_edit_quality(model, locality)
         ret['locality_acc'] = locality_acc
     
     if "multimodal_locality_image" in record.keys():
+        print("multimodal_locality_image: \n")
         # we should not know the answer of the locality question.
         locality_image = prepare_multimodal_edit(hparams, tok, m_loc_a, m_loc_q, m_loc_image)
         locality_image_acc, _ = compute_multimodal_edit_quality(model, locality_image)

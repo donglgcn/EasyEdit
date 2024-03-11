@@ -56,8 +56,8 @@ class OKVQADataset(BaseDataset):
         # versionType ='v2_' # this should be '' when using VQA v2.0 dataset
         taskType    = 'OpenEnded' # 'OpenEnded' only for v2.0. 'OpenEnded' or 'MultipleChoice' for v1.0
         dataSubType = 'val2014'
-        annfile = os.path.join(data_dir, 'mscoco_val2014_annotations.json')
-        quesfile = os.path.join(data_dir, 'OpenEnded_mscoco_val2014_questions.json')
+        annfile = os.path.join(data_dir, 'mscoco_val2014_annotations_train.json')
+        quesfile = os.path.join(data_dir, 'OpenEnded_mscoco_val2014_questions_train.json')
         self.vis_root 		= os.path.join(self.vis_root, dataSubType)
         # initialize VQA api for QA annotations
         self.okvqa          = VQA(annotation_file=annfile, question_file=quesfile)
@@ -141,6 +141,10 @@ class OKVQADataset(BaseDataset):
             item['counterfact_type'] = record['counterfact_type']
             item['counterfact_type_reason'] = record['counterfact_type_reason']
             item['image_object'] = record['image_object']
+            if 'rephrased_questions_train' in self.okvqa.qqa[record['question_id']]:
+                item['rephrased_questions_train'] = self.okvqa.qqa[record['question_id']]['rephrased_questions_train']
+            if 'locality_answer_train' in record:
+                item['locality_answer_train'] = record['locality_answer_train']
             data.append(item)
             
         # if size is not None:

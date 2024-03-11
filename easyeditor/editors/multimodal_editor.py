@@ -592,7 +592,7 @@ class MultimodalEditor:
                 if self.alg_name == 'KN':
                     with torch.no_grad():
                         weights_copy() # unpatch_fn
-                elif self.alg_name == 'MMGRACE':
+                elif self.alg_name == 'MMGRACE' or self.alg_name == 'BalancEdit':
                     self.model = edited_model.reset_layers().model
                 else:
                     with torch.no_grad():
