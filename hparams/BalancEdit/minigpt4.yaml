@@ -14,7 +14,7 @@ inner_params:
 - llama_model.model.layers[31].mlp.up_proj.weight
 
 edit_lr: 1.0
-n_iter: 200
+n_iter: 50
 eps: 20.0
 dist_fn: euc # euc, mmd, cos
 val_init: cold # cold, warm

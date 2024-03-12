@@ -88,7 +88,6 @@ def tokenize(requests, tokenizer, device, hparams, test=False):
         prompts_len=prompts_len
     )
     
-    print("# should replace the training samples in the future in BalancEdit/utils.py")
     src_rephrase = [request["rephrased_questions_train"][0] for request in requests]
     # image_repharse = [request["image_rephrases"][0] for request in requests]
     # image_repharse = torch.stack(image_repharse, dim=0).to(device)

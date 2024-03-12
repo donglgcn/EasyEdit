@@ -6,7 +6,7 @@ from statistics import mean
 from easyeditor import BaseEditor, MultimodalTrainer, MultimodalEditor
 from easyeditor import CaptionDataset, VQADataset, OKVQADataset
 from easyeditor import MENDMultimodalTrainingHparams, SERACMultimodalTrainingHparams, IKEMultimodalHyperParams, MENDMultimodalHparams \
-    , SERACMultimodalHparams, MMGraceMultimodalHyperParams
+    , SERACMultimodalHparams, MMGraceMultimodalHyperParams, BalancEditMultimodalHyperParams
 from easyeditor import encode_ike_facts_multimodal
 from sentence_transformers import SentenceTransformer
 
@@ -732,6 +732,41 @@ def test_MMGRACE_MiniGPT4_OKVQA():
     with open('okvqa_metrics_MMGRACE.pkl', 'wb') as f:
         pickle.dump(metrics, f)
 
+def test_BalancEdit_MiniGPT4_OKVQA():
+    
+    hparams = BalancEditMultimodalHyperParams.from_hparams('hparams/BalancEdit/minigpt4.yaml')
+    editor = MultimodalEditor.from_hparams(hparams)
+    # train_ds = VQADataset('/project/SDS/research/sds-rise/dongliang/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
+    hparams.rephrase_image = '/localtmp/ktm8eh/datasets/VQA/rephrased_images/'
+    eval_ds = OKVQADataset('vqautils', locality_root='/localtmp/ktm8eh/datasets/VQA/locality_images_dalle2/', 
+                           config=hparams)
+    metrics, edited_model, _ = editor.edit_dataset(
+        ds=eval_ds,
+        # train_ds=train_ds,
+        keep_original_weight=True        
+    )
+    #dump metrics
+    import pickle
+    with open('okvqa_metrics_BalancEdit_test.pkl', 'wb') as f:
+        pickle.dump(metrics, f)
+
+def test_BalancEdit_MiniGPT4_VQA():
+    
+    hparams = BalancEditMultimodalHyperParams.from_hparams('hparams/BalancEdit/minigpt4.yaml')
+    editor = MultimodalEditor.from_hparams(hparams)
+    # train_ds = VQADataset('/project/SDS/research/sds-rise/dongliang/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
+    hparams.rephrase_image = '/localtmp/ktm8eh/datasets/EasyEdit/'
+    eval_ds = VQADataset('vqautils/vqa_eval.json', config=hparams)
+    metrics, edited_model, _ = editor.edit_dataset(
+        ds=eval_ds,
+        # train_ds=train_ds,
+        keep_original_weight=True        
+    )
+    #dump metrics
+    import pickle
+    with open('okvqa_metrics_VQA_BalancEdit.pkl', 'wb') as f:
+        pickle.dump(metrics, f)
+
 def load_metrics(path):
     import pickle
     with open(path, 'rb') as f:
@@ -747,7 +782,7 @@ def load_metrics(path):
     return
     
 if __name__ == "__main__":
-    
+    # os.environ['CUDA_VISIBLE_DEVICES'] = '9'
     # train_MEND_MiniGPT4_Caption()
     # train_MEND_MiniGPT4_VQA()
     # train_MEND_Blip2OPT_Caption()
@@ -785,6 +820,8 @@ if __name__ == "__main__":
     # edit_IKE_MiniGPT4_Caption()
     # edit_IKE_MiniGPT4_VQA()
     # edit_IKE_Blip2OPT_VQA()
-    test_MMGRACE_MiniGPT4_OKVQA()
+    # test_MMGRACE_MiniGPT4_OKVQA()
+    # test_BalancEdit_MiniGPT4_OKVQA()
+    test_BalancEdit_MiniGPT4_VQA()
 
     # load_metrics("okvqa_metrics_debug_blackimage.pkl")

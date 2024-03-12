@@ -35,10 +35,10 @@ def purge_rephrased_questions(input_file, output_file):
 
 def purge_rephrased_questions_train(input_file, output_file):
     data = load_rephrased_questions(input_file)
-    data = clean_rephrased_questions(data)
-    original_data = load_rephrased_questions('vqautils/OpenEnded_mscoco_val2014_questions.json')
-    for i in range(len(original_data['questions'])):
-        original_data['questions'][i]['rephrased_questions_train'] = data['rephrased_questions'][i]['rephrased_questions']
+    # data = clean_rephrased_questions(data)
+    original_data = load_rephrased_questions('vqautils/vqa_eval.json')
+    for i in range(len(original_data)):
+        original_data[i]['locality_answer_train'] = data['pred_locality_answer_4_train'][i]['locality_answer_train']
     # original_data['questions'] = data['rephrased_questions']
     save_rephrased_questions(original_data, output_file)
 """
@@ -185,6 +185,6 @@ if __name__ == '__main__':
     # compare_jsons('vqautils/counterfact_type_new.json', 'vqautils/counterfact_type.json', 'vqautils/counterfact_type_previous.json')
     # rename_folder()
     # purge_rephrased_questions('rephrased_questions_train2014.json', 'rephrased_questions_purged.json')
-    # purge_rephrased_questions_train('rephrased_questions_4train.json', 'rephrased_questions_val2014_purged.json')
+    purge_rephrased_questions_train('pred_locality_answer_VQA_4_train.json', 'rephrased_questions_VQA_purged.json')
     # purge_locality_answer('./locality_answer.json')
-    merge_image_object_json('./pred_locality_answer_4_train.json', './vqautils/mscoco_val2014_annotations.json')
+    # merge_image_object_json('./pred_locality_answer_4_train.json', './vqautils/mscoco_val2014_annotations.json')

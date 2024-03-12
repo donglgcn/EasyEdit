@@ -91,6 +91,10 @@ class VQADataset(BaseDataset):
             item['multimodal_locality_image'] = locality_image
             item['multimodal_locality_prompt'] = record['m_loc_q']
             item['multimodal_locality_ground_truth'] = record['m_loc_a']
+            if 'rephrased_questions_train' in record:
+                item['rephrased_questions_train'] = record['rephrased_questions_train']
+            if 'locality_answer_train' in record:
+                item['locality_answer_train'] = record['locality_answer_train']
             data.append(item)
             
         # if size is not None:
