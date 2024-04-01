@@ -82,6 +82,9 @@ class OKVQADataset(BaseDataset):
             locality_image_path = os.path.join(self.locality_root, str(record['question_id']), '0.png')
             
             image = Image.open(image_path).convert("RGB")
+            # caption_image_path = os.path.join(self.vis_root, "COCO_val2014_000000451435.jpg")
+            # caption_image = Image.open(caption_image_path).convert("RGB")
+            # caption_image = self.vis_processor(image)
 
             # debug: replace all rephrase images with the same blank image
             if debug:
@@ -120,6 +123,7 @@ class OKVQADataset(BaseDataset):
                 'target': record['counterfact_answer'],
                 'rephrase_prompts': self.okvqa.qqa[record['question_id']]["rephrased_questions"],
                 'image': image,
+                # 'caption_image': caption_image,
                 'image_rephrases': rephrase_images,
                 'cond': "{} >> {} || {}".format(
                     record["answers"][0]["answer"],
@@ -241,6 +245,10 @@ class OKVQADataset(BaseDataset):
             loc_image['prompts_len'] = [len(self.tok.encode(self.prompt.format(q))) for q in m_loc_q]
             loc_image['labels'] = torch.cat([self.tok.encode(m_loc_ans, return_tensors="pt",) for m_loc_ans in m_loc_a], dim=0)
         
+        # caption = {}
+        # caption['image'] = torch.stack([b['caption_image'] for b in batch], dim=0)
+        # caption['text_input'] = ["a photo of"]
+
         # cond
         cond = self.tok(
             cond,
@@ -256,6 +264,7 @@ class OKVQADataset(BaseDataset):
             "edit_outer_image": edit_outer_image,
             "loc": loc,
             "loc_image": loc_image,
+            # "caption": caption,
             "cond": cond
         }
         return dict_to(batch, self.config.device)

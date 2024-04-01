@@ -1,4 +1,4 @@
-from easyeditor.evaluate.evaluate import compute_multimodal_edit_locality_label_quality
+from easyeditor.evaluate.evaluate import compute_multimodal_edit_locality_label_quality, generate_icl_multimodal_edit_captions, generate_multimodal_edit_captions
 from ..dataset.processor.blip_processors import BlipImageEvalProcessor
 from .editor import BaseEditor
 import os.path
@@ -345,6 +345,8 @@ class MultimodalEditor:
         #     os.mkdir(base_case_path)
         # print(f"Results will be stored at {base_case_path}")
         all_metrics = []
+        pre_caption = []
+        post_caption = []
         for i, request in enumerate(requests):
             start = time()
 
@@ -482,6 +484,7 @@ class MultimodalEditor:
                      ds: Dataset,
                      keep_original_weight=False,
                      verbose=True,
+                     caption=False,
                      **kwargs
                      ):
         # Make Sure dataset supported
@@ -492,7 +495,8 @@ class MultimodalEditor:
         # num_edits = self.hparams.batch_size
         
         all_metrics = []
-
+        pre_captions = []
+        post_captions = []
         for i, request in tqdm(enumerate(ds), desc='Editing dataset', total=len(ds)):
 
             start = time()
@@ -523,6 +527,10 @@ class MultimodalEditor:
                     "image_locality_acc": compute_icl_locality_label_quality(self.model, self.model_name, self.hparams, self.tok, icl_examples, [''], request
                                                         , self.hparams.device)
                 }
+                if caption:
+                    pre_caption, post_caption = generate_icl_multimodal_edit_captions(edited_model, self.hparams, self.tok, request, self.hparams.device)
+                    pre_captions.append(pre_caption)
+                    post_captions.append(post_caption)  
                 # if 'locality_acc' in metrics['pre'].keys(): metrics['pre'].pop('locality_acc')
                 # if 'locality_image_acc' in metrics['pre'].keys(): metrics['pre'].pop('locality_image_acc')
                 if 'locality_output' in metrics['post'].keys():
@@ -589,10 +597,18 @@ class MultimodalEditor:
                     "image_locality_acc": compute_multimodal_edit_locality_label_quality(edited_model, self.hparams, self.tok, request
                                                         , self.hparams.device)
                 }
+                if caption:
+                    pre_caption, post_caption = generate_multimodal_edit_captions(edited_model, self.hparams, self.tok, request, self.hparams.device)
+                    metrics['pre_caption'] = pre_caption
+                    metrics['post_caption'] = post_caption
+                    print(f"Pre Caption: {pre_caption}")
+                    print(f"Post Caption: {post_caption}")
+                # pre_captions.append(pre_caption)
+                # post_captions.append(post_caption)
                 if self.alg_name == 'KN':
                     with torch.no_grad():
                         weights_copy() # unpatch_fn
-                elif self.alg_name == 'MMGRACE' or self.alg_name == 'BalancEdit':
+                elif self.alg_name == 'MMGRACE' or self.alg_name == 'BalancEdit' or self.alg_name == 'MMFT':
                     self.model = edited_model.reset_layers().model
                 else:
                     with torch.no_grad():

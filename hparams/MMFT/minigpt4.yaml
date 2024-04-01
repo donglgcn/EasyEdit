@@ -1,0 +1,38 @@
+alg_name: "MMFT"
+name: hugging_cache/vicuna-7b
+model_name: minigpt4
+model_class: minigpt4
+tokenizer_class: LlamaTokenizer
+tokenizer_name: hugging_cache/vicuna-7b
+sentence_model_name: hugging_cache/all-MiniLM-L6-v2
+device: 0
+
+inner_params:
+# - llama_model.model.layers[30].mlp.down_proj.weight
+# - llama_model.model.layers[30].mlp.up_proj.weight
+# - llama_model.model.layers[31].mlp.down_proj.weight
+- llama_model.model.layers.31.mlp.up_proj.weight
+
+lr: 0.01
+weight_decay: 0
+num_steps: 25
+batch_size: 1
+kl_factor: 0
+norm_constraint: false
+model_parallel: false
+tune_rephrase: false
+tune_locality: false
+
+# Output
+results_dir: ./results
+
+# Multimodal
+task_name: "VQA"
+qformer_checkpoint: hugging_cache/blip2_pretrained_flant5xxl.pth
+qformer_name_or_path: bert-base-uncased
+state_dict_file: hugging_cache/eva_vit_g.pth
+pretrained_ckpt: hugging_cache/pretrained_minigpt4_7b.pth
+
+# image
+coco_image: /localtmp/ktm8eh/datasets/EasyEdit/
+rephrase_image: /localtmp/ktm8eh/datasets/EasyEdit/

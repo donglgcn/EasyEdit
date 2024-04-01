@@ -77,6 +77,7 @@ class BalancEditMultimodalHyperParams(HyperParams):
     eps_expand: str
     num_pert: str
     dropout: float
+    alpha: float
 
     # Module templates
     inner_params: List[str]

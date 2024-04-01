@@ -1,16 +1,40 @@
+from copy import deepcopy
 import torch
 
 from easyeditor.trainer.losses import masked_log_probs
 from .utils import parent_module, brackets_to_periods
 import transformers
 import os
+import torch.nn.functional as F
 os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
 def euc(query, key):
     # Euclidean distance
     if len(key.shape) < 2:
         key = key.view(1, -1)
-    return torch.cdist(key, query, p=2)
+    return torch.cdist(key, query, p=2).view(-1, len(query))
+
+def cos(query, keys):
+    # Normalize the keys and the query to unit vectors along the last dimension (D)
+    keys_normalized = F.normalize(keys, p=2, dim=-1)
+    query_normalized = F.normalize(query, p=2, dim=-1)
+
+    # Calculate cosine similarity
+    # We need to transpose the last two dimensions of query_normalized to align the vectors for batch matrix multiplication
+    cosine_sims = torch.bmm(keys_normalized, query_normalized.transpose(1, 2))  # shape will be (B, N, M)
+
+    # No need to view the result as (-1, len(query)) since we are dealing with batches
+    # If you need to flatten the cosine similarities for each batch, you can do so like this:
+    cosine_sims_flattened = cosine_sims.view(-1, len(query))  # shape will be (B, N*M)
+    return 1 - cosine_sims_flattened
+
+def dist(keys, query, fn):
+    if fn == "euc":
+        return euc(query, keys)
+    elif fn == "cos":
+        return cos(query, keys)
+    else:
+        raise ValueError(f"Distance function {fn} not recognized")
 
 def perturb_values(chosen_value, num_pert, device):
     # Create a bunch of noised versions of the value, then create batch, then train value
@@ -24,6 +48,7 @@ def perturb_values(chosen_value, num_pert, device):
 class BalancEdit(torch.nn.Module):
     def __init__(self, config, model, device):
         super(BalancEdit, self).__init__()
+        self.debug = True
         self.config = config
         self.log_dict = {}
         self.model = model
@@ -76,8 +101,11 @@ class BalancEdit(torch.nn.Module):
         #     setattr(eval(f"self.model.{self.layer}"), "key_id", key_id) # Tell GRACE which token to use for its query (default is the last token)
         return self.model(token)
     
-    # def generate(self, *args, **kwargs):
-    #     return self.model.generate(*args, **kwargs)
+    def generate(self, token):
+        if 'minigpt4' in self.config.model_name.lower():
+            return self.model.predict_answer(token)
+        elif 'blip' in self.config.model_name.lower():
+            return self.model.generate(token)
         
     def edit(self, config, tokens, rephrase_tokens, locality_tokens):
         for layer in self.layers:
@@ -110,7 +138,7 @@ class BalancEdit(torch.nn.Module):
             outputs = self.model(tokens)
             if i == 0:
                 # --- we only need to create an optimizer for the first iteration (but forward pass instantiates the key, so optimzer is passed after first inference) ---
-                optimizer = torch.optim.Adam(self.model.parameters(), config.edit_lr)
+                optimizer = torch.optim.Adam(self.model.parameters(), config.edit_lr*0.01, eps=1e-4)
             # if 'minigpt4' in config.model_name.lower() or 'blip' in self.config.model_name.lower():
             #     if not isinstance(outputs, torch.Tensor):
             #         # batch_labels = outputs.labels
@@ -126,36 +154,53 @@ class BalancEdit(torch.nn.Module):
         print("training done----------------------")
         
         # --- train epsilon ---
-        setattr(eval(f"self.model.{self.layer}"), "calculate_eps", True)
-        for i in range(config.n_iter):
-            # --- insert iteration into each layer (only initiate keys on iteration 1) ---
-            setattr(eval(f"self.model.{self.layer}"), "iter", i)
-            
-            # --- pass tokens through model (including through the GRACE layer) ---
-            outputs = self.model(locality_tokens)
-            if i == 0:
-                # --- we only need to create an optimizer for the first iteration (but forward pass instantiates the key, so optimzer is passed after first inference) ---
-                optimizer = torch.optim.Adam(self.model.parameters(), config.edit_lr)
-            # if 'minigpt4' in config.model_name.lower() or 'blip' in self.config.model_name.lower():
-            #     if not isinstance(outputs, torch.Tensor):
-            #         # batch_labels = outputs.labels
-            #         logits = outputs.logits
-            #     loss = masked_log_probs(config, pred = logits, targ=tokens["labels"], shift=True)["nll"]
-            loss = outputs.loss
-            # print("mend loss:" ,loss, "loss:", outputs.loss)
-            loss.backward()
-            optimizer.step()
-            optimizer.zero_grad()
-            # self.losses.append(loss.detach().cpu().numpy())
-        setattr(eval(f"self.model.{self.layer}"), "calculate_eps", False)
-        negative_key = getattr(eval(f"self.model.{self.layer}"), "new_locality_key")
+        if not self.debug:
+            setattr(eval(f"self.model.{self.layer}"), "calculate_eps", True)
+            for i in range(config.n_iter):
+                # --- insert iteration into each layer (only initiate keys on iteration 1) ---
+                setattr(eval(f"self.model.{self.layer}"), "iter", i)
+                
+                # --- pass tokens through model (including through the GRACE layer) ---
+                outputs = self.model(locality_tokens)
+                if i == 0:
+                    # --- we only need to create an optimizer for the first iteration (but forward pass instantiates the key, so optimzer is passed after first inference) ---
+                    optimizer = torch.optim.Adam(self.model.parameters(), config.edit_lr)
+                # if 'minigpt4' in config.model_name.lower() or 'blip' in self.config.model_name.lower():
+                #     if not isinstance(outputs, torch.Tensor):
+                #         # batch_labels = outputs.labels
+                #         logits = outputs.logits
+                #     loss = masked_log_probs(config, pred = logits, targ=tokens["labels"], shift=True)["nll"]
+                loss = outputs.loss
+                # print("mend loss:" ,loss, "loss:", outputs.loss)
+                loss.backward()
+                optimizer.step()
+                optimizer.zero_grad()
+                # self.losses.append(loss.detach().cpu().numpy())
+            setattr(eval(f"self.model.{self.layer}"), "calculate_eps", False)
+            negative_key = getattr(eval(f"self.model.{self.layer}"), "new_locality_key")
         # negative_key = negative_key[:,-key_id-1,:]
         setattr(eval(f"self.model.{self.layer}"), "cal_rephrase_eps", True)
         self.model(rephrase_tokens)
         rephrase_key = getattr(eval(f"self.model.{self.layer}"), "rephrase_key")
+
+        ########################## debug ##########################
+        if self.debug:
+            from PIL import Image
+            from copy import deepcopy
+            from easyeditor.dataset.processor.blip_processors import BlipImageEvalProcessor
+            vis_processor = BlipImageEvalProcessor(image_size=364, mean=None, std=None)
+            black_tokens = deepcopy(locality_tokens)
+            black_tokens['image'] = vis_processor(Image.new('RGB', (364, 364), color = 'black')).unsqueeze(0).to(self.device)
+            self.model(black_tokens)
+            black_key = getattr(eval(f"self.model.{self.layer}"), "rephrase_key")
+            epsilons_black = eval(f"self.model.{self.layer}").mid_epsilons(rephrase_key, black_key)
+            print("epsilons_black:", epsilons_black)
+        ###########################################################
+
         setattr(eval(f"self.model.{self.layer}"), "cal_rephrase_eps", False)
-        epsilons = eval(f"self.model.{self.layer}").mid_epsilons(rephrase_key, negative_key)
-        print("epsilons:", epsilons)
+        if not self.debug:
+            epsilons = eval(f"self.model.{self.layer}").mid_epsilons(rephrase_key, negative_key)
+            print("epsilons:", epsilons)
 
         # --- pull out info we want to log from the GRACE layer ---
         setattr(eval(f"self.model.{self.layer}"), "training", False)
@@ -171,13 +216,16 @@ class BalancEditAdapter(torch.nn.Module):
 
         self.layer = layer
         self.weight = self.layer.weight
+        self.layer_edit = deepcopy(self.layer)
+        for n, p in self.layer_edit.named_parameters():
+            p.requires_grad = True
         self.init_epsilon = config.eps
         self.dist_fn = config.dist_fn
         self.replacement = config.replacement
         self.device = layer.weight.device
         self.config = config
         self.num_pert = config.num_pert
-        self.alpha = 0.97
+        self.alpha = config.alpha
         self.key_id = -1
     
         if transpose:
@@ -210,8 +258,10 @@ class BalancEditAdapter(torch.nn.Module):
         keys = self.keys.detach().to(torch.float32)
         rephrase_key = rephrase_key.detach().to(torch.float32)
         locality_key = locality_key.detach().to(torch.float32)
-        locality_dists = torch.cdist(keys, locality_key, p=2).view(-1, len(locality_key))
-        rephrase_dists = torch.cdist(keys, rephrase_key, p=2).view(-1, len(rephrase_key))
+        locality_dists = dist(keys, locality_key, self.dist_fn)
+        rephrase_dists = dist(keys, rephrase_key, self.dist_fn)
+        # locality_dists = torch.cdist(keys, locality_key, p=2).view(-1, len(locality_key))
+        # rephrase_dists = torch.cdist(keys, rephrase_key, p=2).view(-1, len(rephrase_key))
         print("locality_dists:", locality_dists)
         print("rephrase_dists:", rephrase_dists)
         epsilons = (1-self.alpha) * locality_dists + self.alpha * rephrase_dists
@@ -234,6 +284,7 @@ class BalancEditAdapter(torch.nn.Module):
     
     def forward(self, *args):
         # This is for dynamic learn epsilon when given a locality sample (negative sample)
+        args_shape = args[0].shape
         token_to_edit = -self.key_id-1
         if self.calculate_eps:
             if self.new_locality_key is None:
@@ -245,11 +296,24 @@ class BalancEditAdapter(torch.nn.Module):
                     self.new_locality_key = torch.nn.Parameter(args[0][:, token_to_edit, :].detach(), requires_grad=True)
             if self.replacement == "replace_last":
                 # args[0][:] = self.new_locality_key
-                args[0][:, token_to_edit] = self.new_locality_key
+                if len(args_shape) == 2:
+                    args[0][token_to_edit] = self.new_locality_key
+                elif len(args_shape) == 3:
+                    args[0][:, token_to_edit] = self.new_locality_key
             layer_out = self.layer(*args)
             return layer_out
         if self.cal_rephrase_eps:
-            self.rephrase_key = args[0][:, token_to_edit, :]
+            if len(args_shape) == 2:
+                self.rephrase_key = args[0][token_to_edit, :].unsqueeze(0)
+            elif len(args_shape) == 3:
+                self.rephrase_key = args[0][:, token_to_edit, :]
+            ############## use average as the key ####################################
+            if len(args_shape) == 2:
+                self.rephrase_key = args[0].unsqueeze(0)
+            elif len(args_shape) == 3:
+                self.rephrase_key = args[0]
+            self.rephrase_key = torch.mean(self.rephrase_key, dim=1, keepdim=True)
+            ##################################################
             layer_out = self.layer(*args)
             return layer_out
 
@@ -269,7 +333,21 @@ class BalancEditAdapter(torch.nn.Module):
             return layer_out
         else:
             token_to_edit = -self.key_id-1 # min(args[0].shape[1]-self.key_id -1, args[0].shape[1]-1) # args[0].shape[1] - 1 is sequence length
-            query = args[0][:, token_to_edit, :] # Just use activation for last token
+            if args[0].shape[1] < -token_to_edit:
+                return layer_out
+            args_shape = args[0].shape
+            if len(args_shape) == 3:
+                query = args[0][:, token_to_edit, :] # Just use activation for last token
+            elif len(args_shape) == 2:
+                query = args[0][token_to_edit, :].unsqueeze(0)
+            
+            ################# use average to compare ##############################
+            if len(args_shape) == 3:
+                query = args[0] # Just use activation for last token
+            elif len(args_shape) == 2:
+                query = args[0].unsqueeze(0)
+            query = torch.mean(query, dim=1, keepdim=True)
+            ################################################
             if self.config.val_init == "cold":
                 new_value = torch.nn.Parameter(torch.rand(1, self.value_shape, requires_grad=True, device=self.device))
             elif self.config.val_init == "warm":
@@ -282,7 +360,8 @@ class BalancEditAdapter(torch.nn.Module):
                 # Keys exist, so we have decide whether or not to update them (the fact that we've made it to this point means there was an error!)
 
                 # --- search through keys for a match for query ---
-                dists = torch.cdist(self.keys, query, p=2).view(-1, len(query))
+                # dists = torch.cdist(self.keys, query, p=2).view(-1, len(query))
+                dists = dist(self.keys, query, self.dist_fn)
                 smallest_distance, nearest_key = dists.min(0)
 
                 if smallest_distance > (self.init_epsilon + self.epsilons[nearest_key]):
@@ -308,7 +387,8 @@ class BalancEditAdapter(torch.nn.Module):
                 pass
         # print(token_to_edit)
         # compute distance from query to all keys and find the closest keys
-        dists = torch.cdist(self.keys, query, p=2).view(-1, len(query))
+        # dists = torch.cdist(self.keys, query, p=2).view(-1, len(query))
+        dists = dist(self.keys, query, self.dist_fn)
         if dists[0][0] != 0:
             print(dists)
         smallest_dist, self.chosen_key = dists.min(0)
@@ -319,6 +399,9 @@ class BalancEditAdapter(torch.nn.Module):
         if (self.config.val_train == "adv") and (self.training):
             chosen_value = perturb_values(chosen_value, self.num_pert, self.device)
 
+        layer_out_shape = layer_out.shape
+        if len(layer_out_shape) == 2:
+            layer_out = layer_out.unsqueeze(0)
         if self.replacement == "replace_all":
             layer_out = torch.where((smallest_dist <= eps).view(-1, 1, 1), chosen_value.unsqueeze(1).repeat_interleave(layer_out.shape[1], 1), layer_out)
         elif self.replacement == "replace_last":
@@ -327,5 +410,13 @@ class BalancEditAdapter(torch.nn.Module):
             layer_out[:, :token_to_edit] = torch.where((smallest_dist <= eps), chosen_value, layer_out[:, :token_to_edit])
         else:
             print("token replacement choice not found")
+        
+        if len(layer_out_shape) == 2:
+            layer_out = layer_out.squeeze(0) 
+        
+        if smallest_dist <= eps:
+            layer_out = self.layer_edit(*args)
+        else:
+            layer_out = self.layer(*args)
         return layer_out
 

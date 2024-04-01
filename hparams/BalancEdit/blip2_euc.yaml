@@ -1,0 +1,44 @@
+alg_name: "BalancEdit"
+name: hugging_cache/opt-2.7b
+model_name: blip2
+model_class: Blip2OPT
+tokenizer_class: GPT2Tokenizer
+tokenizer_name: hugging_cache/opt-2.7b
+sentence_model_name: hugging_cache/all-MiniLM-L6-v2
+device: 0
+
+inner_params:
+# - opt_model.model.decoder.layers[29].fc1.weight
+# - opt_model.model.decoder.layers.29.fc2.weight
+# - opt_model.model.decoder.layers.30.fc1.weight
+# - opt_model.model.decoder.layers.30.fc2.weight
+# - opt_model.model.decoder.layers.31.fc1.weight
+- opt_model.model.decoder.layers[31].fc2.weight
+
+edit_lr: 0.01
+n_iter: 50
+eps: 20.0
+dist_fn: euc # euc, mmd, cos
+val_init: cold # cold, warm
+val_train: sgd # sgd, pert
+val_reg: None # early
+reg: early_stop # early_stop
+replacement: replace_last # replace_last, replace_all, replace_prompt
+eps_expand: coverage # , moving_avg, decay
+num_pert: 8 # only matters when using perturbation training
+dropout: 0.0
+alpha: 0.05
+
+# Output
+results_dir: ./results
+
+# Multimodal
+task_name: "VQA"
+qformer_checkpoint: hugging_cache/blip2_pretrained_opt2.7b.pth
+qformer_name_or_path: bert-base-uncased
+state_dict_file: hugging_cache/eva_vit_g.pth
+# pretrained_ckpt: hugging_cache/pretrained_minigpt4_7b.pth
+
+# image
+coco_image: /localtmp/ktm8eh/datasets/EasyEdit/
+rephrase_image: /localtmp/ktm8eh/datasets/EasyEdit/

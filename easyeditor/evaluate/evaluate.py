@@ -394,11 +394,8 @@ def compute_icl_multimodal_edit_quality(
                                 loc_a, f'New Fact: {prompt} {target}\nPrompt: {loc_q}', None)
         ret['locality_acc'] = locality_acc
     
-    if "multimodal_locality_image" in record.keys():
+    if "locality_prompt" in record.keys():
         # we should not know the answer of the locality question.
-        locality_image_acc, _ = icl_multimodal_lm_eval(model, model_name, hparams, tok, icl_examples,
-                               m_loc_a, f'New Fact: {prompt} {target}\nPrompt: {m_loc_q}', m_loc_image)
-        ret['locality_image_acc'] = locality_image_acc
         if pre_edit:
             _, _, locality_output = icl_multimodal_lm_eval(model, model_name, hparams, tok, icl_examples,
                                     loc_a, loc_q, None, is_loc=True) 
@@ -408,6 +405,9 @@ def compute_icl_multimodal_edit_quality(
         ret['locality_output'] = locality_output
     
     if "multimodal_locality_image" in record.keys():
+        locality_image_acc, _ = icl_multimodal_lm_eval(model, model_name, hparams, tok, icl_examples,
+                               m_loc_a, f'New Fact: {prompt} {target}\nPrompt: {m_loc_q}', m_loc_image)
+        ret['locality_image_acc'] = locality_image_acc
         if pre_edit:
             _, _, locality_image_output = icl_multimodal_lm_eval(model, model_name, hparams, tok, icl_examples,
                                     m_loc_a, m_loc_q, m_loc_image, is_loc=True) 
@@ -464,6 +464,23 @@ def prepare_multimodal_edit(hparams,
     } 
     return ret
 
+def prepare_generate_multimodal_edit_caption(hparams,
+                            tok,
+                            target,
+                            prompts,
+                            image):
+    if isinstance(prompts, str):
+        prompts = [prompts,]
+    if image is not None and len(image.shape) == 3:
+        image = image.unsqueeze(0)
+    text_input = [prompts]
+        
+    ret = {
+        'text_input': text_input,
+        'image': image    
+    } 
+    return ret
+
 def compute_icl_locality_label_quality(model, model_name, hparams, tok, icl_examples, pre_icl_examples, 
                                        record: typing.Dict, device):
     if "multimodal_locality_image" in record.keys():
@@ -500,6 +517,23 @@ def compute_icl_locality_label_quality(model, model_name, hparams, tok, icl_exam
     image_loc_acc = sum(post_image_base_logits_softmax_top_k.view(-1) == base_image_logits_softmax_top_k.view(-1))/post_image_base_logits_softmax_top_k.view(-1).shape[0]
     print("image_loc_acc: ", image_loc_acc)
     return image_loc_acc
+
+def generate_icl_multimodal_edit_captions(model, hparams, tok, icl_examples, pre_icl_examples, 
+                                       record: typing.Dict, device):
+    m_loc_image = record["caption_image"] if record["caption_image"].is_cuda else record["caption_image"].to(hparams.device)
+    m_loc_q = "a photo of "
+    m_loc_a = ""
+    target = record["target"]
+    prompt = record["prompt"]
+
+    post_prompt = [''.join(icl_examples) + f'New Fact: {prompt} {target}\nPrompt: {m_loc_q}']
+    pre_prompt = [''.join(pre_icl_examples) + f'New Fact: {prompt} {target}\nPrompt: {m_loc_q}']
+    samples_post = prepare_generate_multimodal_edit_caption(hparams, tok, m_loc_a, post_prompt, m_loc_image)
+    samples_pre = prepare_generate_multimodal_edit_caption(hparams, tok, m_loc_a, pre_prompt, m_loc_image)
+    with torch.no_grad():
+        base_image_outputs = model.generate(samples_pre)
+        post_image_base_outputs = model.generate(samples_post)
+    return base_image_outputs, post_image_base_outputs
 
 def compute_multimodal_edit_quality(model, batch):
     
@@ -581,6 +615,20 @@ def compute_multimodal_edit_locality_label_quality(model_post, hparams, tok, rec
     image_loc_acc = sum(post_image_base_logits_softmax_top_k.view(-1) == base_image_logits_softmax_top_k.view(-1))/post_image_base_logits_softmax_top_k.view(-1).shape[0]
     print("image_loc_acc: ", image_loc_acc)
     return image_loc_acc
+
+def generate_multimodal_edit_captions(model_post, hparams, tok, record: typing.Dict, device):
+    m_loc_image = record["caption_image"] if record["caption_image"].is_cuda else record["caption_image"].to(hparams.device)
+    m_loc_q = "a photo of "
+    m_loc_a = ""
+    sample = prepare_generate_multimodal_edit_caption(hparams, tok, m_loc_a, m_loc_q, m_loc_image)
+    with torch.no_grad():
+        print("pre_caption: ")
+        model_pre = model_post.reset_layers()
+        base_image_outputs = model_pre.generate(sample)
+        print("post_caption: ")
+        model_post = model_pre.resume_layers()
+        post_image_base_outputs = model_post.generate(sample)
+    return base_image_outputs, post_image_base_outputs
 
 def compute_multimodal_edit_results(
     model,

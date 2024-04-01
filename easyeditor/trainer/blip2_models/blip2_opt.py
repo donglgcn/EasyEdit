@@ -257,8 +257,8 @@ class Blip2OPT(Blip2Base):
                 image.device
             )
 
-            if "prompt" in samples.keys():
-                prompt = samples["prompt"]
+            if "text_input" in samples.keys():
+                prompt = samples["text_input"][0][0]
             else:
                 prompt = self.prompt
 

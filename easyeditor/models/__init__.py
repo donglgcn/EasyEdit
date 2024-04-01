@@ -9,4 +9,5 @@ from .grace import *
 from .mmgrace import *
 from .pmet import *
 from .BalancEdit import *
+from .mmft import *
 # from .melo import *

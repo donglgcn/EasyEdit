@@ -6,7 +6,7 @@ from statistics import mean
 from easyeditor import BaseEditor, MultimodalTrainer, MultimodalEditor
 from easyeditor import CaptionDataset, VQADataset, OKVQADataset
 from easyeditor import MENDMultimodalTrainingHparams, SERACMultimodalTrainingHparams, IKEMultimodalHyperParams, MENDMultimodalHparams \
-    , SERACMultimodalHparams, MMGraceMultimodalHyperParams, BalancEditMultimodalHyperParams
+    , SERACMultimodalHparams, MMGraceMultimodalHyperParams, BalancEditMultimodalHyperParams, MMFTHyperParams
 from easyeditor import encode_ike_facts_multimodal
 from sentence_transformers import SentenceTransformer
 
@@ -63,8 +63,10 @@ def train_MEND_Blip2OPT_Caption():
         
 def train_MEND_Blip2OPT_VQA():
     hparams = MENDMultimodalTrainingHparams.from_hparams('hparams/TRAINING/MEND/blip2.yaml')
-    train_ds = VQADataset('data/vqa_train.json', config=hparams)
-    eval_ds = VQADataset('data/vqa_eval.json', config=hparams)
+    train_ds = VQADataset('/localtmp/ktm8eh/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
+    eval_ds = VQADataset('./vqautils/vqa_eval.json', config=hparams)
+    # hparams.results_dir='./results/MEND_Blip2OPT_VQA'
+    # os.makedirs(hparams.results_dir, exist_ok=True)
     trainer = MultimodalTrainer(
         config=hparams,
         train_set=train_ds,
@@ -108,13 +110,43 @@ def train_MEND_Blip2OPT_VQA_Vision():
     )
     
     trainer.run()    
+
+def test_MEND_Blip2OPT_VQA():
+    hparams = MENDMultimodalHparams.from_hparams('hparams/MEND/blip2.yaml')
+    # train_ds = VQADataset('/localtmp/ktm8eh/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
+    eval_ds = VQADataset('./vqautils/vqa_eval.json', config=hparams)
+    hparams.results_dir='./results/MEND_Blip2OPT_VQA'
+    os.makedirs(hparams.results_dir, exist_ok=True)
+    trainer = MultimodalTrainer(
+        config=hparams,
+        train_set=eval_ds,
+        val_set=eval_ds
+    )
+    
+    trainer.run()  
+
+def test_MEND_Blip2OPT_OKVQA():
+    hparams = MENDMultimodalHparams.from_hparams('hparams/MEND/blip2.yaml')
+    # train_ds = VQADataset('/localtmp/ktm8eh/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
+    hparams.rephrase_image = '/localtmp/ktm8eh/datasets/VQA/rephrased_images/'
+    eval_ds = OKVQADataset('vqautils', size=2, locality_root='/localtmp/ktm8eh/datasets/VQA/locality_images_dalle2/', 
+                           config=hparams)    
+    hparams.results_dir='./results/MEND_Blip2OPT_OKVQA'
+    os.makedirs(hparams.results_dir, exist_ok=True)
+    trainer = MultimodalTrainer(
+        config=hparams,
+        train_set=eval_ds,
+        val_set=eval_ds
+    )
+    
+    trainer.run()  
     
 def test_MEND_MiniGPT4_VQA():
     hparams = MENDMultimodalHparams.from_hparams('hparams/MEND/minigpt4.yaml')
     # train_ds = VQADataset('data/vqa_train.json', config=hparams)
-    eval_ds = VQADataset('/project/SDS/research/sds-rise/dongliang/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_eval.json',
-                         debug=True, config=hparams)
-    hparams.results_dir='./results/test_MEND_MiniGPT4_VQA_DEBUG_blackimage'
+    eval_ds = VQADataset('./vqautils/vqa_eval.json', size=2,
+                         config=hparams)
+    hparams.results_dir='./results/test_MEND_MiniGPT4_VQA'
     os.makedirs(hparams.results_dir, exist_ok=True)
     trainer = MultimodalTrainer(
         config=hparams,
@@ -481,19 +513,41 @@ def test_IKE_Blip2OPT_VQA():
     
     hparams = IKEMultimodalHyperParams.from_hparams('hparams/IKE/blip2.yaml')
     editor = MultimodalEditor.from_hparams(hparams)
-    train_ds = VQADataset('data/vqa_train.json', config=hparams)
-    eval_ds = VQADataset('data/vqa_eval.json', config=hparams)
+    train_ds = VQADataset('/localtmp/ktm8eh/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
+    eval_ds = VQADataset('./vqautils/vqa_eval.json', config=hparams)
     metrics, edited_model, _ = editor.edit_dataset(
         ds=eval_ds,
         train_ds=train_ds,
         keep_original_weight=True        
     )
+    #dump metrics
+    import pickle
+    with open('vqa_metrics_blip2opt.pkl', 'wb') as f:
+        pickle.dump(metrics, f)
+    print_result(metrics)
+
+def test_IKE_Blip2OPT_OKVQA():
     
+    hparams = IKEMultimodalHyperParams.from_hparams('hparams/IKE/blip2.yaml')
+    editor = MultimodalEditor.from_hparams(hparams)
+    train_ds = VQADataset('/localtmp/ktm8eh/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
+    hparams.rephrase_image = '/localtmp/ktm8eh/datasets/VQA/rephrased_images/'
+    eval_ds = OKVQADataset('vqautils', locality_root='/localtmp/ktm8eh/datasets/VQA/locality_images_dalle2/', 
+                           config=hparams)
+    metrics, edited_model, _ = editor.edit_dataset(
+        ds=eval_ds,
+        train_ds=train_ds,
+        keep_original_weight=True        
+    )
+    #dump metrics
+    import pickle
+    with open('okvqa_metrics_blip2opt.pkl', 'wb') as f:
+        pickle.dump(metrics, f)
     print_result(metrics)
     
 def Generate_Embedding_for_IKE():
     
-    hparams = IKEMultimodalHyperParams.from_hparams('hparams/IKE/minigpt4.yaml')
+    hparams = IKEMultimodalHyperParams.from_hparams('hparams/IKE/blip2.yaml')
     train_ds = VQADataset('/localtmp/ktm8eh/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
     ## Generate embedding files for IKE
     sentence_model = SentenceTransformer(hparams.sentence_model_name).to(f'cuda:{hparams.device}')
@@ -531,15 +585,18 @@ def test_IKE_MiniGPT4_VQA():
     
     hparams = IKEMultimodalHyperParams.from_hparams('hparams/IKE/minigpt4.yaml')
     editor = MultimodalEditor.from_hparams(hparams)
-    # train_ds = VQADataset('data/vqa_train.json', config=hparams, size=5)
-    eval_ds = VQADataset('data/vqa_eval.json', config=hparams)
+    train_ds = VQADataset('/localtmp/ktm8eh/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
+    eval_ds = VQADataset('./vqautils/vqa_eval.json', config=hparams)
     metrics, edited_model, _ = editor.edit_dataset(
         ds=eval_ds,
-        train_ds=eval_ds,
+        train_ds=train_ds,
         keep_original_weight=True        
     )
-    
-    print_result(metrics)
+    #dump metrics
+    import pickle
+    with open('vqa_metrics_minigpt4_IKE.pkl', 'wb') as f:
+        pickle.dump(metrics, f)
+    # print_result(metrics)
     
 def test_IKE_Blip2OPT_VQA_debug():
     
@@ -747,12 +804,12 @@ def test_BalancEdit_MiniGPT4_OKVQA():
     )
     #dump metrics
     import pickle
-    with open('okvqa_metrics_BalancEdit_test.pkl', 'wb') as f:
+    with open('okvqa_metrics_BalancEdit_debug_cos.pkl', 'wb') as f:
         pickle.dump(metrics, f)
 
 def test_BalancEdit_MiniGPT4_VQA():
     
-    hparams = BalancEditMultimodalHyperParams.from_hparams('hparams/BalancEdit/minigpt4.yaml')
+    hparams = BalancEditMultimodalHyperParams.from_hparams('hparams/BalancEdit/minigpt4_cos.yaml')
     editor = MultimodalEditor.from_hparams(hparams)
     # train_ds = VQADataset('/project/SDS/research/sds-rise/dongliang/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
     hparams.rephrase_image = '/localtmp/ktm8eh/datasets/EasyEdit/'
@@ -764,21 +821,147 @@ def test_BalancEdit_MiniGPT4_VQA():
     )
     #dump metrics
     import pickle
-    with open('okvqa_metrics_VQA_BalancEdit.pkl', 'wb') as f:
+    with open('vqa_metrics_VQA_BalancEdit_debug_cos.pkl', 'wb') as f:
         pickle.dump(metrics, f)
+
+def test_BalancEdit_BLIP2OPT_VQA():
+    
+    hparams = BalancEditMultimodalHyperParams.from_hparams('hparams/BalancEdit/blip2_cos.yaml')
+    editor = MultimodalEditor.from_hparams(hparams)
+    # train_ds = VQADataset('/project/SDS/research/sds-rise/dongliang/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
+    hparams.rephrase_image = '/localtmp/ktm8eh/datasets/EasyEdit/'
+    eval_ds = VQADataset('vqautils/vqa_eval.json', config=hparams)
+    metrics, edited_model, _ = editor.edit_dataset(
+        ds=eval_ds,
+        # train_ds=train_ds,
+        keep_original_weight=True        
+    )
+    #dump metrics
+    import pickle
+    with open('vqa_blip2opt_metrics_VQA_BalancEdit_v1_debug_cos.pkl', 'wb') as f:
+        pickle.dump(metrics, f)
+
+def test_BalancEdit_BLIP2OPT_OKVQA():
+    
+    hparams = BalancEditMultimodalHyperParams.from_hparams('hparams/BalancEdit/blip2.yaml')
+    editor = MultimodalEditor.from_hparams(hparams)
+    # train_ds = VQADataset('/project/SDS/research/sds-rise/dongliang/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
+    hparams.rephrase_image = '/localtmp/ktm8eh/datasets/VQA/rephrased_images/'
+    eval_ds = OKVQADataset('vqautils', size=2, locality_root='/localtmp/ktm8eh/datasets/VQA/locality_images_dalle2/', 
+                           config=hparams)
+    metrics, edited_model, _ = editor.edit_dataset(
+        ds=eval_ds,
+        # train_ds=train_ds,
+        keep_original_weight=True        
+    )
+    #dump metrics
+    print(metrics)
+    # import pickle
+    # with open('okvqa_blip2opt_metrics_VQA_BalancEdit_v1_debug_cos.pkl', 'wb') as f:
+    #     pickle.dump(metrics, f)
+
+def test_MMFT_MiniGPT4_VQA():
+    
+    hparams = MMFTHyperParams.from_hparams('hparams/MMFT/minigpt4.yaml')
+    editor = MultimodalEditor.from_hparams(hparams)
+    # train_ds = VQADataset('/project/SDS/research/sds-rise/dongliang/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
+    hparams.rephrase_image = '/localtmp/ktm8eh/datasets/EasyEdit/'
+    eval_ds = VQADataset('vqautils/vqa_eval.json', config=hparams)
+    metrics, edited_model, _ = editor.edit_dataset(
+        ds=eval_ds,
+        # train_ds=train_ds,
+        keep_original_weight=True        
+    )
+    #dump metrics
+    import pickle
+    with open('okvqa_metrics_VQA_MMFT.pkl', 'wb') as f:
+        pickle.dump(metrics, f)
+
+def test_MMFT_MiniGPT4_OKVQA():
+    
+    hparams = MMFTHyperParams.from_hparams('hparams/MMFT/minigpt4.yaml')
+    editor = MultimodalEditor.from_hparams(hparams)
+    # train_ds = VQADataset('/project/SDS/research/sds-rise/dongliang/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
+    hparams.rephrase_image = '/localtmp/ktm8eh/datasets/VQA/rephrased_images/'
+    eval_ds = OKVQADataset('vqautils', locality_root='/localtmp/ktm8eh/datasets/VQA/locality_images_dalle2/', 
+                           config=hparams)
+    metrics, edited_model, _ = editor.edit_dataset(
+        ds=eval_ds,
+        # train_ds=train_ds,
+        keep_original_weight=True        
+    )
+    #dump metrics
+    import pickle
+    with open('okvqa_metrics_OKVQA_MMFT.pkl', 'wb') as f:
+        pickle.dump(metrics, f)
+
+def test_MMFT_BLIP2OPT_VQA():
+    
+    hparams = MMFTHyperParams.from_hparams('hparams/MMFT/blip2.yaml')
+    editor = MultimodalEditor.from_hparams(hparams)
+    # train_ds = VQADataset('/project/SDS/research/sds-rise/dongliang/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
+    hparams.rephrase_image = '/localtmp/ktm8eh/datasets/EasyEdit/'
+    eval_ds = VQADataset('vqautils/vqa_eval.json', config=hparams)
+    metrics, edited_model, _ = editor.edit_dataset(
+        ds=eval_ds,
+        # train_ds=train_ds,
+        keep_original_weight=True        
+    )
+    #dump metrics
+    import pickle
+    with open('BLIP2OPT_metrics_VQA_MMFT.pkl', 'wb') as f:
+        pickle.dump(metrics, f)
+
+def test_MMFT_BLIP2OPT_OKVQA():
+    
+    hparams = MMFTHyperParams.from_hparams('hparams/MMFT/blip2.yaml')
+    editor = MultimodalEditor.from_hparams(hparams)
+    # train_ds = VQADataset('/project/SDS/research/sds-rise/dongliang/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
+    hparams.rephrase_image = '/localtmp/ktm8eh/datasets/VQA/rephrased_images/'
+    eval_ds = OKVQADataset('vqautils', locality_root='/localtmp/ktm8eh/datasets/VQA/locality_images_dalle2/', 
+                           config=hparams)
+    metrics, edited_model, _ = editor.edit_dataset(
+        ds=eval_ds,
+        # train_ds=train_ds,
+        keep_original_weight=True        
+    )
+    #dump metrics
+    import pickle
+    with open('BLIP2OPT_metrics_OKVQA_MMFT.pkl', 'wb') as f:
+        pickle.dump(metrics, f)
+
+def to_list(metrics):
+    l = []
+    for m in metrics:
+        if isinstance(m, float):
+            l.append(m)
+        else:
+            l.append(m.item())
+    return l
 
 def load_metrics(path):
     import pickle
     with open(path, 'rb') as f:
         metrics = pickle.load(f)
-    post_rewrite_acc = mean([m['post']['rewrite_acc'] for m in metrics])
-    post_rephrase_acc = mean([m['post']['rephrase_acc'] for m in metrics])
-    post_rephrase_image_acc = mean([m['post']['rephrase_image_acc'] for m in metrics])
-    pre_rewrite_acc = mean([m['pre']['rewrite_acc'] for m in metrics])
-    pre_rephrase_acc = mean([m['pre']['rephrase_acc'] for m in metrics])
-    pre_rephrase_image_acc = mean([m['pre']['rephrase_image_acc'] for m in metrics])
+    post_rewrite_acc = mean(to_list([m['post']['rewrite_acc'] for m in metrics]))
+    post_rephrase_acc = mean(to_list([m['post']['rephrase_acc'] for m in metrics]))
+    post_rephrase_image_acc = mean(to_list([m['post']['rephrase_image_acc'] for m in metrics]))
+    post_locality_image_acc = mean(to_list([m['post']['locality_image_acc'] for m in metrics]))
+    pre_rewrite_acc = mean(to_list([m['pre']['rewrite_acc'].item() for m in metrics]))
+    pre_rephrase_acc = mean(to_list([m['pre']['rephrase_acc'].item() for m in metrics]))
+    pre_rephrase_image_acc = mean(to_list([m['pre']['rephrase_image_acc'] for m in metrics]))
+    pre_locality_image_acc = mean(to_list([m['pre']['locality_image_acc'] for m in metrics]))
+    image_locality_acc = mean(to_list([m['image_locality_acc'] for m in metrics]))
     # print results
-    print(f'post_rewrite_acc: {post_rewrite_acc}\npost_rephrase_acc: {post_rephrase_acc}\npost_rephrase_image_acc: {post_rephrase_image_acc}\npre_rewrite_acc: {pre_rewrite_acc}\npre_rephrase_acc: {pre_rephrase_acc}\npre_rephrase_image_acc: {pre_rephrase_image_acc}')
+    print(f'post_rewrite_acc: {post_rewrite_acc}\n  \
+        post_rephrase_acc: {post_rephrase_acc}\n  \
+        post_rephrase_image_acc: {post_rephrase_image_acc}\n  \
+        post_locality_image_acc: {post_locality_image_acc}\n  \
+        pre_rewrite_acc: {pre_rewrite_acc}\n  \
+        pre_rephrase_acc: {pre_rephrase_acc}\n    \
+        pre_rephrase_image_acc: {pre_rephrase_image_acc}\n  \
+        pre_locality_image_acc: {pre_locality_image_acc}\n  \
+        image_locality_acc: {image_locality_acc}\n')
     return
     
 if __name__ == "__main__":
@@ -801,16 +984,19 @@ if __name__ == "__main__":
     
     
     # test_SERAC_MiniGPT4_Caption()
-    # test_MEND_MiniGPT4_VQA()
+    test_MEND_MiniGPT4_VQA()
     # test_MEND_MiniGPT4_OKVQA()
     # Generate_Embedding_for_IKE()
     # test_IKE_MiniGPT4_Caption()
     # test_IKE_MiniGPT4_VQA()
     # test_IKE_MiniGPT4_VQA_debug()
     # test_IKE_Blip2OPT_VQA()
+    # test_IKE_Blip2OPT_OKVQA()
     # test_IKE_MiniGPT4_VQA()
     # test_IKE_Blip2OPT_VQA_debug()
     # test_IKE_MiniGPT4_OKVQA()
+    # test_MEND_Blip2OPT_VQA()
+    # test_MEND_Blip2OPT_OKVQA()
     
 
     # edit_MEND_MiniGPT4_Caption()
@@ -822,6 +1008,12 @@ if __name__ == "__main__":
     # edit_IKE_Blip2OPT_VQA()
     # test_MMGRACE_MiniGPT4_OKVQA()
     # test_BalancEdit_MiniGPT4_OKVQA()
-    test_BalancEdit_MiniGPT4_VQA()
+    # test_BalancEdit_MiniGPT4_VQA()
+    # test_MMFT_MiniGPT4_VQA()
+    # test_MMFT_MiniGPT4_OKVQA()
+    # test_BalancEdit_BLIP2OPT_VQA()
+    # test_BalancEdit_BLIP2OPT_OKVQA()
+    # test_MMFT_BLIP2OPT_VQA()
+    # test_MMFT_BLIP2OPT_OKVQA()
 
     # load_metrics("okvqa_metrics_debug_blackimage.pkl")

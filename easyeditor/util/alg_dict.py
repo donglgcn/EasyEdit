@@ -12,6 +12,7 @@ from ..models.grace import GraceHyperParams, apply_grace_to_model
 from ..models.pmet import PMETHyperParams, apply_pmet_to_model
 from ..models.mmgrace import MMGraceMultimodalHyperParams, apply_mmgrace_to_model
 from ..models.BalancEdit import BalancEditMultimodalHyperParams, apply_BalancEdit_to_model
+from ..models.mmft import MMFTHyperParams, apply_mmft_to_model
 # from ..models.melo import MELOHyperParams, apply_melo_to_model
 
 ALG_DICT = {
@@ -38,6 +39,7 @@ ALG_MULTIMODAL_DICT = {
     'IKE': apply_ike_to_multimodal_model,
     'MMGRACE': apply_mmgrace_to_model,
     'BalancEdit': apply_BalancEdit_to_model,
+    'MMFT': apply_mmft_to_model,
 }
 
 DS_DICT = {

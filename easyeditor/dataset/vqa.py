@@ -64,6 +64,10 @@ class VQADataset(BaseDataset):
             locality_image = Image.open(locality_image_path).convert("RGB")
 
             image = self.vis_processor(image)
+            # caption image
+            # caption_image_path = os.path.join(self.vis_root, "COCO_val2014_000000451435.jpg")
+            # caption_image = Image.open(caption_image_path).convert("RGB")
+            # caption_image = self.vis_processor(caption_image)
             if debug:
                 blank_img=Image.new('RGB', (364, 364), color = 'black')
                 rephrase_image = self.vis_processor(blank_img)
@@ -77,6 +81,7 @@ class VQADataset(BaseDataset):
                 'target': record['alt'],
                 'rephrase_prompt': record['rephrase'],
                 'image': image,
+                # 'caption_image': caption_image,
                 'image_rephrase': rephrase_image,
                 'cond': "{} >> {} || {}".format(
                     record['pred'],
@@ -184,6 +189,10 @@ class VQADataset(BaseDataset):
             loc_image['prompts_len'] = [len(self.tok.encode(self.prompt.format(q))) for q in m_loc_q]
             loc_image['labels'] = torch.cat([self.tok.encode(m_loc_ans, return_tensors="pt",) for m_loc_ans in m_loc_a], dim=0)
 
+        # caption = {}
+        # caption['image'] = torch.stack([b['caption_image'] for b in batch], dim=0)
+        # caption['text_input'] = ["a photo of"]
+
         # cond
         cond = self.tok(
             cond,
@@ -199,6 +208,7 @@ class VQADataset(BaseDataset):
             "edit_outer_image": edit_outer_image,
             "loc": loc,
             "loc_image": loc_image,
+            # "caption": caption,
             "cond": cond
         }
         return dict_to(batch, self.config.device)

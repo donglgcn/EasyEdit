@@ -73,7 +73,7 @@ def tokenize(requests, tokenizer, device, hparams, test=False):
     image = torch.stack(image, dim=0).to(device)
     text_input = [s + " "+ t for s, t in zip(src, trg)]
     
-    if hparams.model_name == "minigpt4":
+    if hparams.model_name == "minigpt4" or hparams.model_name == "blip2":
         prompts_len = [len(tokenizer.encode(s, add_special_tokens=False)) for s in src]
         labels = tokenizer(trg, add_special_tokens=False, return_tensors="pt",)["input_ids"].to(device)
     else:
@@ -104,7 +104,7 @@ def tokenize(requests, tokenizer, device, hparams, test=False):
         image=image, # image_repharse,
         text_input=text_input_repharse,
         labels=labels,
-        prompts_len=prompts_len
+        prompts_len=prompts_len_repharse
     )
     text_input_locality = [s + " "+ t for s, t in zip(src, locality_answer)]
     tokens_locality = dict(

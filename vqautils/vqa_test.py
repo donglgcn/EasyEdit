@@ -1,8 +1,8 @@
 import transformers
 import sys
-sys.path.append("EasyEdit/easyeditor/dataset/processor/")
-from blip_processors import BlipImageEvalProcessor
-from easyeditor import MiniGPT4
+sys.path.append("../easyeditor/dataset/processor/")
+# from blip_processors import BlipImageEvalProcessor
+# from easyeditor import MiniGPT4
 from vqa import VQA
 import random
 import matplotlib.pyplot as plt

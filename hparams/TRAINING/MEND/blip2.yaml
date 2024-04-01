@@ -73,5 +73,5 @@ qformer_checkpoint: hugging_cache/blip2_pretrained_opt2.7b.pth
 qformer_name_or_path: bert-base-uncased
 state_dict_file: hugging_cache/eva_vit_g.pth
 # image
-coco_image: ../
-rephrase_image: ../
+coco_image: /localtmp/ktm8eh/datasets/EasyEdit/
+rephrase_image: /localtmp/ktm8eh/datasets/EasyEdit/

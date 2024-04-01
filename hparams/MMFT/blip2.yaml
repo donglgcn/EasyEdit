@@ -1,0 +1,40 @@
+alg_name: "MMFT"
+name: hugging_cache/opt-2.7b
+model_name: blip2
+model_class: Blip2OPT
+tokenizer_class: GPT2Tokenizer
+tokenizer_name: hugging_cache/opt-2.7b
+sentence_model_name: hugging_cache/all-MiniLM-L6-v2
+device: 0
+
+inner_params:
+# - opt_model.model.decoder.layers.29.fc1.weight
+# - opt_model.model.decoder.layers.29.fc2.weight
+# - opt_model.model.decoder.layers.30.fc1.weight
+# - opt_model.model.decoder.layers.30.fc2.weight
+# - opt_model.model.decoder.layers.31.fc1.weight
+- opt_model.model.decoder.layers.31.fc2.weight
+
+lr: 0.01
+weight_decay: 0
+num_steps: 25
+batch_size: 1
+kl_factor: 0
+norm_constraint: false
+model_parallel: false
+tune_rephrase: false
+tune_locality: false
+
+# Output
+results_dir: ./results
+
+# Multimodal
+task_name: "VQA"
+qformer_checkpoint: hugging_cache/blip2_pretrained_opt2.7b.pth
+qformer_name_or_path: bert-base-uncased
+state_dict_file: hugging_cache/eva_vit_g.pth
+# pretrained_ckpt: hugging_cache/pretrained_minigpt4_7b.pth
+
+# image
+coco_image: /localtmp/ktm8eh/datasets/EasyEdit/
+rephrase_image: /localtmp/ktm8eh/datasets/EasyEdit/

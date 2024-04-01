@@ -277,6 +277,13 @@ class MEND(EditableModel):
         else:
             outputs = _logits(self.model(**kwargs))
         return outputs
+
+    def generate(self, token):
+        if 'minigpt4' in self.config.model_name.lower():
+            return self.model.predict_answer(token)
+        elif 'blip' in self.config.model_name.lower():
+            return self.model.generate(token)
+        
     def outer_parameters(self):
         return list(self.mend.parameters()) + [self.edit_lrs]
 

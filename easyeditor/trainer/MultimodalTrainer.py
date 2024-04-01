@@ -39,7 +39,7 @@ class MultimodalTrainer(BaseTrainer):
                 self.model.loc_ids = batch["loc"]["input_ids"]
                 self.model.loc_masks = batch["loc"]["attention_mask"]
 
-    def edit_step(self, batch, training: bool):
+    def edit_step(self, batch, training: bool, caption=False):
         self.model.train(training)
         self.original_model.train(training)
 
@@ -56,6 +56,8 @@ class MultimodalTrainer(BaseTrainer):
             else:
                 base_image_logits = base_image_outputs
         
+            if caption:
+                pre_caption = self.model.generate(batch['caption'])
         # Do the edit
 
         start = time.time()
@@ -63,6 +65,10 @@ class MultimodalTrainer(BaseTrainer):
         edit_time = time.time() - start
 
         with torch.set_grad_enabled(training):
+            if caption:
+                post_caption = edited_model.generate(batch['caption'])
+                print("pre_caption: ", pre_caption)
+                print("post_caption: ", post_caption)
             # Editing loss
             # print(batch["edit_outer"]['text_input'])
             if isinstance(batch["edit_outer"]['text_input'][0], list):
