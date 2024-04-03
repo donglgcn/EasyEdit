@@ -967,7 +967,7 @@ def load_metrics(path):
 if __name__ == "__main__":
     # os.environ['CUDA_VISIBLE_DEVICES'] = '9'
     # train_MEND_MiniGPT4_Caption()
-    # train_MEND_MiniGPT4_VQA()
+    train_MEND_MiniGPT4_VQA()
     # train_MEND_Blip2OPT_Caption()
     # train_MEND_Blip2OPT_VQA()
     # train_MEND_Blip2OPT_VQA_Vision()

@@ -7,9 +7,9 @@ model_class: Blip2OPT
 tokenizer_class: LlamaTokenizer
 tokenizer_name: hugging_cache/vicuna-7b
 inner_params:
-- llama_model.model.layers.30.mlp.down_proj.weight
-- llama_model.model.layers.30.mlp.up_proj.weight
-- llama_model.model.layers.31.mlp.down_proj.weight
+# - llama_model.model.layers.30.mlp.down_proj.weight
+# - llama_model.model.layers.30.mlp.up_proj.weight
+# - llama_model.model.layers.31.mlp.down_proj.weight
 - llama_model.model.layers.31.mlp.up_proj.weight
 
 # Method
