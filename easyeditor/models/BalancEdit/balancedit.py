@@ -103,7 +103,7 @@ class BalancEdit(torch.nn.Module):
     
     def generate(self, token):
         if 'minigpt4' in self.config.model_name.lower():
-            return self.model.predict_answer(token)
+            return self.model.predict_answers(token)
         elif 'blip' in self.config.model_name.lower():
             return self.model.generate(token)
         

@@ -305,7 +305,8 @@ class MiniGPT4(Blip2Base):
         vqa_prompt = '###Human: <Img><ImageHere></Img> '
         img_embeds, atts_img = self.prompt_wrap(img_embeds, atts_img, vqa_prompt)
         self.llama_tokenizer.padding_side = "right"
-
+        
+        samples["text_input"] = samples["text_input"][0]
         text = [t + self.end_sym for t in samples["text_input"]]
 
         to_regress_tokens = self.llama_tokenizer(
@@ -317,15 +318,15 @@ class MiniGPT4(Blip2Base):
             add_special_tokens=False
         ).to(image.device)
 
-        targets = to_regress_tokens.input_ids.masked_fill(
-            to_regress_tokens.input_ids == self.llama_tokenizer.pad_token_id, -100
-        )
+        # targets = to_regress_tokens.input_ids.masked_fill(
+        #     to_regress_tokens.input_ids == self.llama_tokenizer.pad_token_id, -100
+        # )
 
-        empty_targets = (
-            torch.ones([atts_img.shape[0], atts_img.shape[1]+1],
-                       dtype=torch.long).to(image.device).fill_(-100)  # plus one for bos
-        )
-        targets = torch.cat([empty_targets, targets], dim=1)
+        # empty_targets = (
+        #     torch.ones([atts_img.shape[0], atts_img.shape[1]+1],
+        #                dtype=torch.long).to(image.device).fill_(-100)  # plus one for bos
+        # )
+        # targets = torch.cat([empty_targets, targets], dim=1)
 
         batch_size = img_embeds.shape[0]
         bos = torch.ones([batch_size, 1],

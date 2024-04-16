@@ -618,7 +618,7 @@ def compute_multimodal_edit_locality_label_quality(model_post, hparams, tok, rec
 
 def generate_multimodal_edit_captions(model_post, hparams, tok, record: typing.Dict, device):
     m_loc_image = record["caption_image"] if record["caption_image"].is_cuda else record["caption_image"].to(hparams.device)
-    m_loc_q = "a photo of "
+    m_loc_q = "a photo of"
     m_loc_a = ""
     sample = prepare_generate_multimodal_edit_caption(hparams, tok, m_loc_a, m_loc_q, m_loc_image)
     with torch.no_grad():
@@ -628,6 +628,7 @@ def generate_multimodal_edit_captions(model_post, hparams, tok, record: typing.D
         print("post_caption: ")
         model_post = model_pre.resume_layers()
         post_image_base_outputs = model_post.generate(sample)
+        print('done!')
     return base_image_outputs, post_image_base_outputs
 
 def compute_multimodal_edit_results(

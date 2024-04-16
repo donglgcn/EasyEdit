@@ -115,7 +115,7 @@ def test_MEND_Blip2OPT_VQA():
     hparams = MENDMultimodalHparams.from_hparams('hparams/MEND/blip2.yaml')
     # train_ds = VQADataset('/localtmp/ktm8eh/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
     eval_ds = VQADataset('./vqautils/vqa_eval.json', config=hparams)
-    hparams.results_dir='./results/MEND_Blip2OPT_VQA'
+    hparams.results_dir='./results/MEND_Blip2OPT_VQA_layer1'
     os.makedirs(hparams.results_dir, exist_ok=True)
     trainer = MultimodalTrainer(
         config=hparams,
@@ -129,9 +129,9 @@ def test_MEND_Blip2OPT_OKVQA():
     hparams = MENDMultimodalHparams.from_hparams('hparams/MEND/blip2.yaml')
     # train_ds = VQADataset('/localtmp/ktm8eh/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
     hparams.rephrase_image = '/localtmp/ktm8eh/datasets/VQA/rephrased_images/'
-    eval_ds = OKVQADataset('vqautils', size=2, locality_root='/localtmp/ktm8eh/datasets/VQA/locality_images_dalle2/', 
+    eval_ds = OKVQADataset('vqautils', locality_root='/localtmp/ktm8eh/datasets/VQA/locality_images_dalle2/', 
                            config=hparams)    
-    hparams.results_dir='./results/MEND_Blip2OPT_OKVQA'
+    hparams.results_dir='./results/MEND_Blip2OPT_OKVQA_layer1'
     os.makedirs(hparams.results_dir, exist_ok=True)
     trainer = MultimodalTrainer(
         config=hparams,
@@ -146,7 +146,7 @@ def test_MEND_MiniGPT4_VQA():
     # train_ds = VQADataset('data/vqa_train.json', config=hparams)
     eval_ds = VQADataset('./vqautils/vqa_eval.json', size=2,
                          config=hparams)
-    hparams.results_dir='./results/test_MEND_MiniGPT4_VQA'
+    hparams.results_dir='./results/test_MEND_MiniGPT4_VQA_layer1'
     os.makedirs(hparams.results_dir, exist_ok=True)
     trainer = MultimodalTrainer(
         config=hparams,
@@ -795,7 +795,7 @@ def test_BalancEdit_MiniGPT4_OKVQA():
     editor = MultimodalEditor.from_hparams(hparams)
     # train_ds = VQADataset('/project/SDS/research/sds-rise/dongliang/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
     hparams.rephrase_image = '/localtmp/ktm8eh/datasets/VQA/rephrased_images/'
-    eval_ds = OKVQADataset('vqautils', locality_root='/localtmp/ktm8eh/datasets/VQA/locality_images_dalle2/', 
+    eval_ds = OKVQADataset('vqautils', size=1, locality_root='/localtmp/ktm8eh/datasets/VQA/locality_images_dalle2/', 
                            config=hparams)
     metrics, edited_model, _ = editor.edit_dataset(
         ds=eval_ds,
@@ -803,9 +803,9 @@ def test_BalancEdit_MiniGPT4_OKVQA():
         keep_original_weight=True        
     )
     #dump metrics
-    import pickle
-    with open('okvqa_metrics_BalancEdit_debug_cos.pkl', 'wb') as f:
-        pickle.dump(metrics, f)
+    # import pickle
+    # with open('okvqa_metrics_BalancEdit_debug_cos.pkl', 'wb') as f:
+    #     pickle.dump(metrics, f)
 
 def test_BalancEdit_MiniGPT4_VQA():
     
@@ -847,7 +847,7 @@ def test_BalancEdit_BLIP2OPT_OKVQA():
     editor = MultimodalEditor.from_hparams(hparams)
     # train_ds = VQADataset('/project/SDS/research/sds-rise/dongliang/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
     hparams.rephrase_image = '/localtmp/ktm8eh/datasets/VQA/rephrased_images/'
-    eval_ds = OKVQADataset('vqautils', size=2, locality_root='/localtmp/ktm8eh/datasets/VQA/locality_images_dalle2/', 
+    eval_ds = OKVQADataset('vqautils', size=1, locality_root='/localtmp/ktm8eh/datasets/VQA/locality_images_dalle2/', 
                            config=hparams)
     metrics, edited_model, _ = editor.edit_dataset(
         ds=eval_ds,
@@ -965,9 +965,16 @@ def load_metrics(path):
     return
     
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', '--function', type=str, default="test_MEND_MiniGPT4_VQA", help='function to run')
+    args = parser.parse_args()
+    if args.function:
+        locals()[args.function]()
+
     # os.environ['CUDA_VISIBLE_DEVICES'] = '9'
     # train_MEND_MiniGPT4_Caption()
-    train_MEND_MiniGPT4_VQA()
+    # train_MEND_MiniGPT4_VQA()
     # train_MEND_Blip2OPT_Caption()
     # train_MEND_Blip2OPT_VQA()
     # train_MEND_Blip2OPT_VQA_Vision()
@@ -984,7 +991,7 @@ if __name__ == "__main__":
     
     
     # test_SERAC_MiniGPT4_Caption()
-    test_MEND_MiniGPT4_VQA()
+    # test_MEND_MiniGPT4_VQA()
     # test_MEND_MiniGPT4_OKVQA()
     # Generate_Embedding_for_IKE()
     # test_IKE_MiniGPT4_Caption()
