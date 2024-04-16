@@ -139,9 +139,11 @@ class GradientTransform(nn.Module):
                     )
 
             if self.k < 2:
-                raise RuntimeError(
-                    f"Can't perform normalization with only {self.k} samples so far"
-                )
+                self.k += 1e-7
+                print(f"Can't perform normalization with only {self.k} samples so far")
+                # raise RuntimeError(
+                #     f"Can't perform normalization with only {self.k} samples so far"
+                # )
             self.u_std = (self.u_s / (self.k - 1)) ** 0.5
             self.v_std = (self.v_s / (self.k - 1)) ** 0.5
 
