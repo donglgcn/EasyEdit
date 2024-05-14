@@ -500,6 +500,7 @@ class MultimodalEditor:
         for i, request in tqdm(enumerate(ds), desc='Editing dataset', total=len(ds)):
 
             start = time()
+            # continue_training = False
 
             if self.alg_name == 'IKE':
                 assert 'train_ds' in kwargs.keys() or print('IKE need train_ds (For getting In-Context prompt)')
@@ -582,7 +583,8 @@ class MultimodalEditor:
                     copy=False,
                     return_orig_weights=True,
                     keep_original_weight=keep_original_weight,
-                    train_ds=kwargs['train_ds'] if self.alg_name == 'IKE' else None
+                    train_ds=kwargs['train_ds'] if self.alg_name == 'IKE' else None,
+                    # continue_training = continue_training
                 )
                 exec_time = time() - start
                 LOG.info(f"Execution {i} editing took {exec_time}")
@@ -642,7 +644,8 @@ class MultimodalEditor:
                     )
 
                 all_metrics.append(metrics)
-
+                # self.model = edited_model.resume_layers().model
+                # continue_training=True
         return all_metrics, edited_model, weights_copy
 
     def _chunks(self, arr, n):

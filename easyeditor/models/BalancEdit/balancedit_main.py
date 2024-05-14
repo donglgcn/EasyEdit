@@ -16,6 +16,7 @@ def apply_BalancEdit_to_model(
         copy=False,
         return_orig_weights=False,
         keep_original_weight=True,
+        continue_training=False,
         **kwargs: Any,
 ) -> Tuple[AutoModelForCausalLM, Dict[str, Any]]:
     # request = requests[0]
@@ -23,7 +24,10 @@ def apply_BalancEdit_to_model(
         model = deepcopy(model)
     weights_copy = {}
     device = torch.device(f'cuda:{hparams.device}')
-    editor = BalancEdit(model=model, config=hparams,device=device)
+    if continue_training:
+        editor = model
+    else:  
+        editor = BalancEdit(model=model, config=hparams,device=device)
 
     for request in requests:
         token,rephrase_token,locality_token = tokenize(request,tokenizer=tok,device=device, hparams=hparams)

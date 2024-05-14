@@ -306,6 +306,8 @@ class MiniGPT4(Blip2Base):
         img_embeds, atts_img = self.prompt_wrap(img_embeds, atts_img, vqa_prompt)
         self.llama_tokenizer.padding_side = "right"
         
+        if isinstance(samples["text_input"], str):
+            samples["text_input"] = [samples["text_input"]]
         samples["text_input"] = samples["text_input"][0]
         text = [t + self.end_sym for t in samples["text_input"]]
 
