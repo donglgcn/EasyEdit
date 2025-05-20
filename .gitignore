@@ -13,5 +13,5 @@ vqautils/KEY.py
 *.json
 *.log
 huggingface_cache
-vqautils
+vqautils/
 multimodal_edit_copy.py
