@@ -1,10 +1,10 @@
 <div align="center">
 
-**BalancEdit: Dynamically Balancing the Generality-Locality Trade-off in Multi-modal Model Editing**
+# BalancEdit: Dynamically Balancing the Generality-Locality Trade-off in Multi-modal Model Editing
 
 </div>
 
-## 🌟Overview
+## Overview
 This repo is based on an earlier version of EasyEdit. We edit the evaluation code and add our method.
 
 ![](figs/overview.png)
@@ -12,7 +12,7 @@ This repo is based on an earlier version of EasyEdit. We edit the evaluation cod
 
 ## Requirements
 
-#### 🔧Pip Installation
+#### Pip Installation
 
 **Note: Please use Python 3.9+ for EasyEdit**
 To get started, simply install conda and run:
