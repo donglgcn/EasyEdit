@@ -7,3 +7,9 @@ examples/wiki_recent
 .vscode
 logs
 results
+vqautils/KEY.py
+*.pkl
+*.txt
+*.json
+*.log
+huggingface_cache

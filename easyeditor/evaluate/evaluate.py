@@ -734,7 +734,11 @@ def compute_multimodal_edit_results_demo(
 
     edit_inner = prepare_multimodal_edit(hparams, tok, target, prompt, image)
     print("edit_inner: \n")
+    import time
+    time_start = time.time()
     edit_acc, _, logits = compute_multimodal_edit_quality_demo(model, edit_inner)
+    time_end = time.time()
+    print('time cost', time_end-time_start, 's')
     ret = {
         f"rewrite_acc": edit_acc
     }

@@ -795,7 +795,7 @@ def test_BalancEdit_MiniGPT4_OKVQA():
     editor = MultimodalEditor.from_hparams(hparams)
     # train_ds = VQADataset('/project/SDS/research/sds-rise/dongliang/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
     hparams.rephrase_image = '/localtmp/ktm8eh/datasets/VQA/rephrased_images/'
-    eval_ds = OKVQADataset('vqautils', size=1, locality_root='/localtmp/ktm8eh/datasets/VQA/locality_images_dalle2/', 
+    eval_ds = OKVQADataset('vqautils', locality_root='/localtmp/ktm8eh/datasets/VQA/locality_images_dalle2/', 
                            config=hparams)
     metrics, edited_model, _ = editor.edit_dataset(
         ds=eval_ds,
@@ -803,9 +803,15 @@ def test_BalancEdit_MiniGPT4_OKVQA():
         keep_original_weight=True        
     )
     #dump metrics
-    # import pickle
-    # with open('okvqa_metrics_BalancEdit_debug_cos.pkl', 'wb') as f:
-    #     pickle.dump(metrics, f)
+    print(metrics)
+    import pickle
+    with open('okvqa_metrics_BalancEditt_alpha1_rebuttal_minigpt4.pkl', 'wb') as f:
+        pickle.dump(metrics, f)
+    # with open('okvqa_metrics_BalancEdit_sequential50_keys.pkl', 'wb') as f:
+    #     pickle.dump(edited_model.BalancEdit_layers[0].keys, f)
+    # with open('okvqa_metrics_BalancEdit_sequential50_eps.pkl', 'wb') as f:
+    #     pickle.dump(edited_model.BalancEdit_layers[0].epsilons, f)
+    
 
 def test_BalancEdit_MiniGPT4_VQA():
     
@@ -847,8 +853,8 @@ def test_BalancEdit_BLIP2OPT_OKVQA():
     editor = MultimodalEditor.from_hparams(hparams)
     # train_ds = VQADataset('/project/SDS/research/sds-rise/dongliang/datasets/EasyEdit/MMEDIT/editing-data-20231120T160427Z-001/editing-data/vqa/vqa_train.json', config=hparams)
     hparams.rephrase_image = '/localtmp/ktm8eh/datasets/VQA/rephrased_images/'
-    eval_ds = OKVQADataset('vqautils', size=1, locality_root='/localtmp/ktm8eh/datasets/VQA/locality_images_dalle2/', 
-                           config=hparams)
+    eval_ds = OKVQADataset('vqautils', locality_root='/localtmp/ktm8eh/datasets/VQA/locality_images_dalle2/', 
+                           config=hparams) # size=100
     metrics, edited_model, _ = editor.edit_dataset(
         ds=eval_ds,
         # train_ds=train_ds,
@@ -856,9 +862,9 @@ def test_BalancEdit_BLIP2OPT_OKVQA():
     )
     #dump metrics
     print(metrics)
-    # import pickle
-    # with open('okvqa_blip2opt_metrics_VQA_BalancEdit_v1_debug_cos.pkl', 'wb') as f:
-    #     pickle.dump(metrics, f)
+    import pickle
+    with open('okvqa_metrics_BalancEdit_alpha1_rebuttal_blip2.pkl', 'wb') as f:
+        pickle.dump(metrics, f)
 
 def test_MMFT_MiniGPT4_VQA():
     

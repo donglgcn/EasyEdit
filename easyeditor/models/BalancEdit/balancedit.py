@@ -69,7 +69,7 @@ class BalancEdit(torch.nn.Module):
         else:
             transpose = True
 
-        # --- Add GRACE to chosen layers ---
+        # --- Add to chosen layers ---
         edit_modules = [parent_module(self.model, brackets_to_periods(layer)) for layer in self.layers]
         layer_names = [layer.rsplit(".", 1)[-1] for layer in self.layers]
         original_layers = [getattr(edit_module, layer_name) for edit_module, layer_name in zip(edit_modules, layer_names)]
@@ -262,8 +262,8 @@ class BalancEditAdapter(torch.nn.Module):
         rephrase_dists = dist(keys, rephrase_key, self.dist_fn)
         # locality_dists = torch.cdist(keys, locality_key, p=2).view(-1, len(locality_key))
         # rephrase_dists = torch.cdist(keys, rephrase_key, p=2).view(-1, len(rephrase_key))
-        print("locality_dists:", locality_dists)
-        print("rephrase_dists:", rephrase_dists)
+        # print("locality_dists:", locality_dists)
+        # print("rephrase_dists:", rephrase_dists)
         epsilons = (1-self.alpha) * locality_dists + self.alpha * rephrase_dists
         # epsilons = (locality_dists + rephrase_dists) / 2
         self.epsilons = epsilons
