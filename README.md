@@ -5,7 +5,7 @@
 </div>
 
 ## Overview
-This repo is based on an earlier version of EasyEdit. We edit the evaluation code and add our method.
+This repo is based on an earlier version of EasyEdit. We revised the evaluation code and added our method.
 
 ![](figs/overview.png)
 
@@ -18,7 +18,7 @@ This repo is based on an earlier version of EasyEdit. We edit the evaluation cod
 To get started, simply install conda and run:
 
 ```shell
-git clone --branch MMOKVQA --single-branch https://github.com/donglgcn/EasyEdit.git
+git clone --branch MMOKVQA --single-branch https://github.com/donglgcn/BalancEdit.git
 conda create -n EasyEdit python=3.9.7
 ...
 pip install -r requirements.txt
